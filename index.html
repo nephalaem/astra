@@ -15,23 +15,36 @@
             min-height: 100vh; 
             transition: all 0.5s ease;
             font-family: 'Tajawal', sans-serif;
+            overflow-x: hidden;
         }
         .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .filter-btn.active { border-bottom: 2px solid var(--accent); opacity: 1; color: var(--accent); }
-        #settingsMenu { display: none; z-index: 100; }
+        
+        /* إصلاح قائمة الإعدادات */
+        #settingsMenu { 
+            display: none; 
+            z-index: 100; 
+            position: relative; /* لضمان عدم تداخله مع العناصر الأخرى عند الإغلاق */
+        }
         #settingsMenu.show { display: block; animation: slideDown 0.2s ease-out; }
+        
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
         .theme-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,0.2); transition: 0.2s; }
         .theme-dot:hover { transform: scale(1.2); border-color: white; }
+        
         #confirmModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 200; align-items: center; justify-content: center; }
         #confirmModal.show { display: flex; }
         .confetti { position: absolute; pointer-events: none; z-index: 50; border-radius: 50%; }
+        
+        /* تحسين استجابة حقل الإدخال */
+        #taskInput { pointer-events: auto !important; position: relative; z-index: 10; }
     </style>
 </head>
 <body class="text-white p-4 md:p-10">
 
-    <div class="max-w-xl mx-auto">
-        <header class="flex justify-between items-center mb-10">
+    <div class="max-w-xl mx-auto min-h-[90vh] flex flex-col" id="main-container">
+        <header class="flex justify-between items-center mb-10 shrink-0">
             <div class="text-start">
                 <span class="text-4xl font-bold" id="completion-rate">0%</span>
                 <p class="text-[10px] uppercase opacity-50 tracking-widest" id="rate-label">نسبة الإنجاز</p>
@@ -41,11 +54,11 @@
                     <h1 class="text-4xl font-bold tracking-tighter" id="brand-name" style="color: #a5b4fc;">ASTRA</h1>
                     <p class="text-xs opacity-50" id="slogan">نظّم مهامك بذكاء</p>
                 </div>
-                <button onclick="toggleMenu()" class="p-3 glass-card rounded-xl hover:bg-white/10 transition-colors">⚙️</button>
+                <button id="menuTrigger" onclick="event.stopPropagation(); toggleMenu();" class="p-3 glass-card rounded-xl hover:bg-white/10 transition-colors relative z-[110]">⚙️</button>
             </div>
         </header>
 
-        <div id="settingsMenu" class="glass-card rounded-3xl p-6 mb-8 shadow-2xl border-white/20">
+        <div id="settingsMenu" onclick="event.stopPropagation();" class="glass-card rounded-3xl p-6 mb-8 shadow-2xl border-white/20">
             <h3 class="text-xs font-bold opacity-50 mb-4 uppercase tracking-wider" id="theme-label">اختر السمة (15 ثيم)</h3>
             <div class="grid grid-cols-5 gap-3 mb-6" id="themeGrid"></div>
             
@@ -62,27 +75,28 @@
             <button onclick="openModal()" class="w-full text-center py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-2xl text-sm font-bold transition-colors" id="clear-btn-text">مسح جميع المهام</button>
         </div>
 
-        <div class="flex gap-2 p-1.5 glass-card rounded-2xl mb-8 items-center shadow-lg">
-            <input type="text" id="taskInput" class="bg-transparent flex-grow p-3 outline-none text-lg" placeholder="أضف مهمة جديدة...">
+        <div class="flex gap-2 p-1.5 glass-card rounded-2xl mb-8 items-center shadow-lg shrink-0">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-3 outline-none text-lg text-white" placeholder="أضف مهمة جديدة..." autocomplete="off">
             <button onclick="addTask()" id="addBtn" class="bg-indigo-600 hover:bg-indigo-500 px-8 py-3 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-indigo-500/20">إضافة</button>
         </div>
 
-        <div class="flex gap-8 mb-6 text-xs font-bold uppercase tracking-widest opacity-60">
+        <div class="flex gap-8 mb-6 text-xs font-bold uppercase tracking-widest opacity-60 shrink-0">
             <button onclick="setFilter('all')" class="filter-btn active pb-2" id="f-all">الكل</button>
             <button onclick="setFilter('active')" class="filter-btn pb-2" id="f-active">قيد التنفيذ</button>
             <button onclick="setFilter('completed')" class="filter-btn pb-2" id="f-completed">المكتملة</button>
         </div>
 
-        <div id="taskList" class="space-y-4"></div>
-        
-        <div id="emptyState" class="text-center py-24 opacity-20 hidden">
-            <p class="text-5xl mb-4">✨</p>
-            <p id="empty-text" class="text-xl">لا توجد مهام حالياً</p>
+        <div class="flex-grow">
+            <div id="taskList" class="space-y-4"></div>
+            <div id="emptyState" class="text-center py-24 opacity-20 hidden">
+                <p class="text-5xl mb-4">✨</p>
+                <p id="empty-text" class="text-xl">لا توجد مهام حالياً</p>
+            </div>
         </div>
     </div>
 
     <div id="confirmModal">
-        <div class="glass-card p-8 rounded-[2rem] max-w-xs w-full text-center border-white/20">
+        <div class="glass-card p-8 rounded-[2rem] max-w-xs w-full text-center border-white/20" onclick="event.stopPropagation();">
             <h2 class="text-2xl font-bold mb-3" id="confirm-title">حذف الكل؟</h2>
             <p class="text-sm opacity-60 mb-8" id="confirm-body">هل أنت متأكد؟ لا يمكن استرجاع المهام بعد حذفها.</p>
             <div class="flex gap-3">
@@ -93,7 +107,6 @@
     </div>
 
     <script>
-        // --- البيانات والترجمة ---
         let tasks = JSON.parse(localStorage.getItem('astra_tasks')) || [];
         let currentFilter = 'all';
         let currentLang = 'ar';
@@ -122,7 +135,19 @@
             { bg: 'linear-gradient(135deg, #1e1b4b, #4338ca)', accent: '#818cf8' }
         ];
 
-        // --- الوظائف الأساسية ---
+        // إغلاق القائمة عند الضغط خارجها
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('settingsMenu');
+            if (menu.classList.contains('show')) {
+                menu.classList.remove('show');
+            }
+        });
+
+        function toggleMenu() {
+            const menu = document.getElementById('settingsMenu');
+            menu.classList.toggle('show');
+        }
+
         function renderTasks() {
             const list = document.getElementById('taskList');
             list.innerHTML = '';
@@ -186,7 +211,6 @@
             renderTasks();
         }
 
-        // --- واجهة المستخدم والجماليات ---
         function changeLanguage(lang) {
             currentLang = lang;
             const t = i18n[lang];
@@ -216,7 +240,8 @@
                 const dot = document.createElement('div');
                 dot.className = 'theme-dot';
                 dot.style.background = t.bg;
-                dot.onclick = () => {
+                dot.onclick = (e) => {
+                    e.stopPropagation();
                     document.body.style.background = t.bg;
                     document.documentElement.style.setProperty('--accent', t.accent);
                     document.getElementById('brand-name').style.color = t.accent;
@@ -231,9 +256,13 @@
             document.getElementById('completion-rate').innerText = perc + '%';
         }
 
-        function toggleMenu() { document.getElementById('settingsMenu').classList.toggle('show'); }
-        function openModal() { document.getElementById('confirmModal').classList.add('show'); toggleMenu(); }
-        function closeModal() { document.getElementById('confirmModal').classList.remove('show'); }
+        function openModal() { 
+            document.getElementById('confirmModal').classList.add('show'); 
+        }
+        
+        function closeModal() { 
+            document.getElementById('confirmModal').classList.remove('show'); 
+        }
 
         function playBell() {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -259,10 +288,11 @@
             }
         }
 
-        // تشغيل أولي
         initThemes();
         renderTasks();
-        document.getElementById('taskInput').onkeypress = (e) => e.key === 'Enter' && addTask();
+        document.getElementById('taskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
     </script>
 </body>
 </html>
