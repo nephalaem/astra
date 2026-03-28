@@ -58,9 +58,18 @@
     <div class="app-container min-h-screen flex flex-col" id="main-container">
         <!-- Header: ممتد بالكامل -->
         <header class="flex justify-between items-center mb-10 shrink-0">
-            <div class="text-start">
-                <span class="text-5xl font-bold" id="completion-rate">0%</span>
-                <p class="text-xs uppercase opacity-50 tracking-widest" id="rate-label">نسبة الإنجاز</p>
+            <div class="flex items-center gap-6 text-start">
+                <div>
+                    <span class="text-5xl font-bold" id="completion-rate">0%</span>
+                    <p class="text-xs uppercase opacity-50 tracking-widest" id="rate-label">نسبة الإنجاز</p>
+                </div>
+
+                <!-- أيقونة المصفوفة الجديدة للربط بالملف الثاني -->
+                <a href="index2.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all text-white/20 hover:text-white/60 group" title="مصفوفة أيزنهاور">
+                    <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"></path>
+                    </svg>
+                </a>
             </div>
             
             <div class="flex items-center gap-6">
@@ -90,7 +99,7 @@
             <button onclick="openModal()" class="w-full text-center py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-2xl text-sm font-bold transition-colors" id="clear-btn-text">مسح جميع المهام</button>
         </div>
 
-        <!-- Input Section: ممتد بالكامل -->
+        <!-- Input Section -->
         <div class="flex gap-4 p-2 glass-card rounded-3xl mb-8 items-center shadow-lg shrink-0">
             <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-xl text-white" placeholder="أضف مهمة جديدة..." autocomplete="off">
             <button onclick="addTask()" id="addBtn" class="bg-indigo-600 hover:bg-indigo-500 px-12 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">إضافة</button>
@@ -103,7 +112,7 @@
             <button onclick="setFilter('completed')" class="filter-btn pb-2" id="f-completed">المكتملة</button>
         </div>
 
-        <!-- Task List Container: ممتد بالكامل -->
+        <!-- Task List Container -->
         <div class="flex-grow pb-10">
             <div id="taskList" class="grid grid-cols-1 gap-4"></div>
             <div id="emptyState" class="text-center py-32 opacity-20 hidden">
@@ -247,7 +256,6 @@
             document.getElementById('confirm-btn-action').innerText = t.cBtn;
             document.getElementById('confirm-cancel-btn').innerText = t.cCan;
             
-            // تعديل اتجاه قائمة الإعدادات بناءً على اللغة
             const menu = document.getElementById('settingsMenu');
             if(lang === 'ar') {
                 menu.style.left = '2rem';
