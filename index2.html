@@ -9,7 +9,8 @@
     
     <style>
         :root {
-            --primary-color: #6366f1; /* القيمة الافتراضية */
+            /* سيتم تحديث هذه القيمة برمجياً، والأزرق هو الاحتياطي */
+            --primary-color: #6366f1; 
         }
 
         body { 
@@ -40,20 +41,37 @@
             transform: translateX(-5px);
         }
 
-        /* تنسيقات تعتمد على المتغير البرمجي */
+        /* تنسيقات تعتمد على المتغير البرمجي بقوة إضافية */
         .text-primary { color: var(--primary-color) !important; }
         .bg-primary { background-color: var(--primary-color) !important; }
         .border-primary { border-color: var(--primary-color) !important; }
         .accent-primary { accent-color: var(--primary-color) !important; }
         
         /* تلوين الـ SVG بناءً على الثيم */
-        .svg-primary { stroke: var(--primary-color); }
+        .svg-primary { stroke: var(--primary-color) !important; }
         
         #add-btn {
-            background-color: var(--primary-color);
+            background-color: var(--primary-color) !important;
             transition: all 0.3s ease;
         }
+
+        /* تأثير التوهج للثيم المختار */
+        .theme-dot.active {
+            outline: 2px solid white;
+            outline-offset: 2px;
+            transform: scale(1.2);
+        }
     </style>
+    
+    <!-- كود لمنع وميض اللون الافتراضي قبل تحميل الصفحة -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('astra_theme');
+            if (savedTheme) {
+                document.documentElement.style.setProperty('--primary-color', savedTheme);
+            }
+        })();
+    </script>
 </head>
 <body class="p-6">
 
@@ -70,11 +88,11 @@
         
         <div class="flex items-center gap-6">
             <!-- اختيار الثيم -->
-            <div class="flex gap-2 p-2 glass-card rounded-xl">
-                <button onclick="setTheme('#6366f1')" class="w-5 h-5 rounded-full bg-[#6366f1] border-2 border-white/10 hover:scale-110 transition-transform"></button>
-                <button onclick="setTheme('#ec4899')" class="w-5 h-5 rounded-full bg-[#ec4899] border-2 border-white/10 hover:scale-110 transition-transform"></button>
-                <button onclick="setTheme('#22c55e')" class="w-5 h-5 rounded-full bg-[#22c55e] border-2 border-white/10 hover:scale-110 transition-transform"></button>
-                <button onclick="setTheme('#f59e0b')" class="w-5 h-5 rounded-full bg-[#f59e0b] border-2 border-white/10 hover:scale-110 transition-transform"></button>
+            <div class="flex gap-3 p-2 glass-card rounded-xl">
+                <button onclick="setTheme('#6366f1')" data-color="#6366f1" class="theme-dot w-5 h-5 rounded-full bg-[#6366f1] border border-white/10 hover:scale-110 transition-all"></button>
+                <button onclick="setTheme('#ec4899')" data-color="#ec4899" class="theme-dot w-5 h-5 rounded-full bg-[#ec4899] border border-white/10 hover:scale-110 transition-all"></button>
+                <button onclick="setTheme('#22c55e')" data-color="#22c55e" class="theme-dot w-5 h-5 rounded-full bg-[#22c55e] border border-white/10 hover:scale-110 transition-all"></button>
+                <button onclick="setTheme('#f59e0b')" data-color="#f59e0b" class="theme-dot w-5 h-5 rounded-full bg-[#f59e0b] border border-white/10 hover:scale-110 transition-all"></button>
             </div>
 
             <div class="text-right">
@@ -141,17 +159,29 @@
     </div>
 
     <script>
-        // إدارة البيانات والسمات
+        // إدارة البيانات
         let tasks = JSON.parse(localStorage.getItem('astra_tasks_pure')) || [];
         
-        // دالة تغيير وحفظ الثيم بشكل جذري
+        // دالة تغيير وحفظ الثيم
         function setTheme(color) {
-            if(!color) color = '#6366f1'; // اللون الافتراضي
+            if(!color) color = '#6366f1'; 
             
+            // 1. تحديث المتغير الأساسي في الـ CSS
             document.documentElement.style.setProperty('--primary-color', color);
+            
+            // 2. الحفظ في الذاكرة
             localStorage.setItem('astra_theme', color);
             
-            // تطبيق فوري للظل على زر الإضافة
+            // 3. تحديث مظهر أزرار اختيار اللون (إضافة علامة للنشط)
+            document.querySelectorAll('.theme-dot').forEach(dot => {
+                if(dot.getAttribute('data-color') === color) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+
+            // 4. تحديث الظل البرمجي لزر الإضافة
             const addBtn = document.getElementById('add-btn');
             if(addBtn) {
                 addBtn.style.boxShadow = `0 10px 20px -5px ${color}66`;
@@ -159,13 +189,11 @@
         }
 
         function renderTasks() {
-            // مسح القوائم الحالية
             ['do', 'schedule', 'delegate', 'delete'].forEach(id => {
                 const el = document.getElementById('list-' + id);
                 if(el) el.innerHTML = '';
             });
 
-            // توزيع المهام
             tasks.forEach((t, i) => {
                 const list = document.getElementById('list-' + t.quadrant);
                 if (list) {
@@ -182,7 +210,6 @@
                 }
             });
 
-            // تحديث الإحصائيات
             const done = tasks.filter(t => t.completed).length;
             document.getElementById('comp-rate').innerText = (tasks.length ? Math.round((done / tasks.length) * 100) : 0) + '%';
         }
@@ -217,9 +244,9 @@
             renderTasks();
         }
 
-        // تشغيل عند التحميل - مع التأكد من استعادة الثيم
+        // التنفيذ عند تحميل الصفحة بالكامل
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('astra_theme');
+            const savedTheme = localStorage.getItem('astra_theme') || '#6366f1';
             setTheme(savedTheme); 
             renderTasks();
         });
