@@ -9,281 +9,328 @@
     
     <style>
         body { 
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); 
+            background: #000; 
+            background-image: radial-gradient(circle at top right, #1a1a2e, #000);
             background-attachment: fixed; 
             min-height: 100vh; 
             font-family: 'Tajawal', sans-serif;
+            color: white;
             margin: 0;
-            padding: 0;
             overflow-x: hidden;
         }
-        .glass-card { 
-            background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(15px); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-        }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.1); }
         
-        /* تصميم المؤقت الدائري المطور */
-        .timer-container {
+        /* تصميم البكرات Picker */
+        .picker-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            height: 200px;
             position: relative;
-            width: 280px;
-            height: 280px;
+        }
+        .picker-column {
+            width: 70px;
+            height: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+            mask-image: linear-gradient(to bottom, transparent, black 40%, black 60%, transparent);
+        }
+        .picker-column::-webkit-scrollbar { display: none; }
+        .picker-item {
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 2rem;
+            opacity: 0.2;
+            scroll-snap-align: center;
+            transition: 0.3s;
         }
-        .timer-svg {
-            transform: rotate(-90deg);
-            width: 100%;
-            height: 100%;
-        }
-        .timer-bg { 
-            fill: none; 
-            stroke: rgba(255,255,255,0.05); 
-            stroke-width: 6; 
-        }
-        .timer-progress {
-            fill: none;
-            stroke: #6366f1;
-            stroke-width: 6;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.3s ease;
-        }
-        .timer-text {
-            position: absolute;
-            font-family: 'monospace';
-            font-size: 3.5rem;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        .picker-item.active { opacity: 1; color: #818cf8; transform: scale(1.2); font-weight: bold; }
+
+        /* دائرة المؤقت */
+        .timer-svg { transform: rotate(-90deg); width: 260px; height: 260px; }
+        .timer-circle-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 3; }
+        .timer-circle-prog { 
+            fill: none; stroke: #6366f1; stroke-width: 3; stroke-linecap: round; 
+            transition: stroke-dashoffset 0.5s linear;
         }
 
-        .tab-btn.active { 
-            background: rgba(99, 102, 241, 0.3); 
-            border-color: rgba(99, 102, 241, 0.6); 
-            color: white; 
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
-        }
         .hidden { display: none !important; }
-        .quadrant { transition: all 0.3s ease; min-height: 250px; }
         
-        /* تلوين المهام عند الانتهاء */
-        .task-done { opacity: 0.3; filter: grayscale(1); }
+        /* زر التنقل السفلي */
+        .nav-bar {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+        .nav-btn { opacity: 0.4; transition: 0.3s; }
+        .nav-btn.active { opacity: 1; color: #818cf8; }
     </style>
 </head>
-<body class="text-white p-4 md:p-10">
+<body class="p-6">
 
-    <!-- القائمة العلوية للتبديل السريع -->
-    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
+    <!-- Header -->
+    <header class="max-w-4xl mx-auto flex justify-between items-center mb-8">
         <div class="flex items-center gap-4">
-            <a href="index.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all text-white/50 hover:text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            <a href="index.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </a>
-            <div class="flex glass-card p-1 rounded-2xl border border-white/5">
-                <button onclick="switchMode('matrix')" id="btn-matrix" class="tab-btn px-6 py-2 rounded-xl text-sm font-medium transition-all">المصفوفة</button>
-                <button onclick="switchMode('timer')" id="btn-timer" class="tab-btn px-6 py-2 rounded-xl text-sm font-medium transition-all">الساعة</button>
+            <!-- مربع الساعة المصغر الشفاف (يظهر فقط في المصفوفة) -->
+            <div id="mini-timer-shortcut" onclick="switchMode('timer')" class="glass-card px-4 py-2 rounded-2xl cursor-pointer hover:bg-white/10 flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                <span id="mini-time" class="font-mono font-bold text-lg">00:00</span>
             </div>
         </div>
+        <div class="text-right">
+            <h1 id="page-title" class="text-2xl font-black text-indigo-400">ASTRA MATRIX</h1>
+            <p id="stats-label" class="text-[10px] opacity-40 tracking-widest uppercase">إنجازك: <span id="comp-rate">0%</span></p>
+        </div>
+    </header>
 
-        <div class="text-center md:text-end">
-            <h1 class="text-4xl font-bold tracking-tighter" style="color: #a5b4fc;">ASTRA <span class="text-sm opacity-20">TOOLS</span></h1>
-            <p id="completion-label" class="text-[10px] uppercase opacity-40 tracking-widest mt-1">نسبة الإنجاز: <span id="completion-rate">0%</span></p>
+    <!-- واجهة المصفوفة (صفحة مستقلة) -->
+    <div id="view-matrix" class="max-w-4xl mx-auto animate-in fade-in duration-500 pb-24">
+        <div class="glass-card p-3 rounded-2xl mb-8 flex gap-2">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-3 outline-none text-white placeholder:text-white/20" placeholder="مهمة جديدة...">
+            <select id="quadSelect" class="bg-transparent border-l border-white/10 px-2 text-xs outline-none">
+                <option value="do">عاجل وهام</option>
+                <option value="schedule">خطط لها</option>
+                <option value="delegate">فوّضها</option>
+                <option value="delete">احذفها</option>
+            </select>
+            <button onclick="addTask()" class="bg-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-500">إضافة</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="glass-card p-5 rounded-3xl border-r-2 border-red-500/50">
+                <h3 class="text-red-400 font-bold mb-4 text-sm flex items-center gap-2">🔴 افعل الآن</h3>
+                <div id="list-do" class="space-y-2"></div>
+            </div>
+            <div class="glass-card p-5 rounded-3xl border-r-2 border-blue-500/50">
+                <h3 class="text-blue-400 font-bold mb-4 text-sm flex items-center gap-2">🔵 خطط لها</h3>
+                <div id="list-schedule" class="space-y-2"></div>
+            </div>
+            <div class="glass-card p-5 rounded-3xl border-r-2 border-orange-500/50">
+                <h3 class="text-orange-400 font-bold mb-4 text-sm flex items-center gap-2">🟠 فوّضها</h3>
+                <div id="list-delegate" class="space-y-2"></div>
+            </div>
+            <div class="glass-card p-5 rounded-3xl border-r-2 border-gray-500/50">
+                <h3 class="text-gray-400 font-bold mb-4 text-sm flex items-center gap-2">⚪ احذفها</h3>
+                <div id="list-delete" class="space-y-2"></div>
+            </div>
         </div>
     </div>
 
-    <main class="max-w-6xl mx-auto">
-        
-        <!-- واجهة الساعة (Timer View) -->
-        <div id="timer-view" class="hidden flex flex-col items-center justify-center py-4 scale-in">
-            <div class="glass-card p-8 md:p-12 rounded-[3rem] flex flex-col items-center w-full max-w-md shadow-2xl">
-                <h2 class="text-xl font-medium mb-8 opacity-40 tracking-[0.2em]">FOCUS SESSION</h2>
-                
-                <div class="timer-container mb-10">
-                    <svg class="timer-svg" viewBox="0 0 100 100">
-                        <circle class="timer-bg" cx="50" cy="50" r="45"></circle>
-                        <circle id="progress-circle" class="timer-progress" cx="50" cy="50" r="45" stroke-dasharray="283" stroke-dashoffset="0"></circle>
-                    </svg>
-                    <div class="timer-text" id="time-display">25:00</div>
-                </div>
-
-                <div class="flex gap-4 mb-10">
-                    <button onclick="toggleTimer()" id="startBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 shadow-lg shadow-indigo-600/20">ابدأ</button>
-                    <button onclick="resetTimer()" class="p-4 glass-card rounded-2xl hover:bg-white/10 transition-colors">🔄</button>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 w-full">
-                    <button onclick="setTime(25)" class="py-3 glass-card rounded-xl text-xs hover:bg-white/5 transition-colors">تركيز (25د)</button>
-                    <button onclick="setTime(5)" class="py-3 glass-card rounded-xl text-xs hover:bg-white/5 transition-colors">راحة (5د)</button>
-                </div>
+    <!-- واجهة الساعة (صفحة مستقلة تماماً) -->
+    <div id="view-timer" class="hidden max-w-md mx-auto animate-in fade-in duration-500 pb-24 text-center">
+        <!-- بكرات الاختيار -->
+        <div id="timer-setup">
+            <div class="picker-wrapper mb-10">
+                <div class="picker-column" id="p-h"></div>
+                <span class="text-2xl font-bold opacity-20">:</span>
+                <div class="picker-column" id="p-m"></div>
+                <span class="text-2xl font-bold opacity-20">:</span>
+                <div class="picker-column" id="p-s"></div>
             </div>
         </div>
 
-        <!-- واجهة المصفوفة (Matrix View) -->
-        <div id="matrix-view" class="hidden">
-            <div class="glass-card p-2 rounded-2xl mb-8 flex flex-col md:flex-row items-center gap-2">
-                <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20" placeholder="أدخل مهمة جديدة...">
-                <div class="flex gap-2 w-full md:w-auto">
-                    <select id="quadSelect" class="bg-indigo-900/40 text-white rounded-xl px-4 py-3 outline-none border border-white/10 text-xs cursor-pointer">
-                        <option value="do">عاجل وهام</option>
-                        <option value="schedule">خطط لها</option>
-                        <option value="delegate">فوّضها</option>
-                        <option value="delete">احذفها</option>
-                    </select>
-                    <button onclick="addTask()" class="bg-indigo-600 px-8 py-3 rounded-xl font-bold text-sm whitespace-nowrap hover:bg-indigo-500 transition-all">إضافة</button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="glass-card p-6 rounded-3xl quadrant q-do border-r-4 border-r-red-500/50">
-                    <h3 class="text-red-400 font-bold mb-4 flex items-center gap-2"><span>🔴</span> افعل الآن</h3>
-                    <div id="taskList-do" class="space-y-3"></div>
-                </div>
-                <div class="glass-card p-6 rounded-3xl quadrant q-schedule border-r-4 border-r-blue-500/50">
-                    <h3 class="text-blue-400 font-bold mb-4 flex items-center gap-2"><span>🔵</span> خطط لها</h3>
-                    <div id="taskList-schedule" class="space-y-3"></div>
-                </div>
-                <div class="glass-card p-6 rounded-3xl quadrant q-delegate border-r-4 border-r-orange-500/50">
-                    <h3 class="text-orange-400 font-bold mb-4 flex items-center gap-2"><span>🟠</span> فوّضها</h3>
-                    <div id="taskList-delegate" class="space-y-3"></div>
-                </div>
-                <div class="glass-card p-6 rounded-3xl quadrant q-delete border-r-4 border-r-gray-500/50">
-                    <h3 class="text-gray-400 font-bold mb-4 flex items-center gap-2"><span>⚪</span> احذفها</h3>
-                    <div id="taskList-delete" class="space-y-3"></div>
-                </div>
+        <!-- العرض الدائري عند التشغيل -->
+        <div id="timer-running" class="hidden relative flex justify-center mb-10">
+            <svg class="timer-svg" viewBox="0 0 100 100">
+                <circle class="timer-circle-bg" cx="50" cy="50" r="48"></circle>
+                <circle id="prog-circle" class="timer-circle-prog" cx="50" cy="50" r="48" stroke-dasharray="301.59" stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <span id="big-time" class="text-5xl font-mono font-bold">00:00:00</span>
             </div>
         </div>
-    </main>
+
+        <!-- أزرار التحكم -->
+        <div class="flex justify-center gap-8 mb-12">
+            <button onclick="toggleTimer()" id="btn-play" class="w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center hover:scale-105 transition-all">
+                <svg id="svg-play" class="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="svg-pause" class="w-6 h-6 fill-white hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button onclick="resetTimer()" class="w-16 h-16 rounded-full glass-card flex items-center justify-center hover:bg-white/10">
+                <svg class="w-5 h-5 stroke-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+        </div>
+
+        <!-- مهام مخصصة (كما في صورة 3) -->
+        <div class="text-right space-y-3">
+            <h4 class="text-[10px] opacity-30 font-bold uppercase tracking-widest pr-2">مؤقتات مخصصة لمهامك</h4>
+            <div onclick="quickStart(2, 'تنظيف الأسنان')" class="glass-card p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all">
+                <div class="flex items-center gap-3"><span>🪥</span> <span class="font-bold text-sm">تنظيف الأسنان</span></div>
+                <span class="opacity-40 font-mono text-xs">02:00</span>
+            </div>
+            <div onclick="quickStart(10, 'سلق البيض')" class="glass-card p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all">
+                <div class="flex items-center gap-3"><span>🥚</span> <span class="font-bold text-sm">سلق البيض</span></div>
+                <span class="opacity-40 font-mono text-xs">10:00</span>
+            </div>
+            <div onclick="quickStart(25, 'جلسة تركيز')" class="glass-card p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all border-l-2 border-indigo-500">
+                <div class="flex items-center gap-3"><span>🧠</span> <span class="font-bold text-sm">جلسة تركيز Astra</span></div>
+                <span class="opacity-40 font-mono text-xs">25:00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- شريط التنقل السفلي -->
+    <nav class="nav-bar glass-card p-1 rounded-2xl flex gap-1">
+        <button onclick="switchMode('matrix')" id="nav-matrix" class="nav-btn px-8 py-3 rounded-xl flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="2" stroke-linecap="round"/></svg>
+            <span class="text-xs font-bold">المصفوفة</span>
+        </button>
+        <button onclick="switchMode('timer')" id="nav-timer" class="nav-btn px-8 py-3 rounded-xl flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke-width="2"/></svg>
+            <span class="text-xs font-bold">المؤقت</span>
+        </button>
+    </nav>
 
     <script>
-        // --- إدارة الأوضاع ---
-        let currentMode = new URLSearchParams(window.location.search).get('mode') || 'matrix';
+        // --- إدارة الحالة ---
+        let currentMode = 'matrix';
+        let tasks = JSON.parse(localStorage.getItem('astra_tasks_v2')) || [];
 
         function switchMode(mode) {
             currentMode = mode;
-            document.getElementById('matrix-view').classList.toggle('hidden', mode !== 'matrix');
-            document.getElementById('timer-view').classList.toggle('hidden', mode !== 'timer');
-            document.getElementById('completion-label').classList.toggle('hidden', mode !== 'matrix');
+            document.getElementById('view-matrix').classList.toggle('hidden', mode !== 'matrix');
+            document.getElementById('view-timer').classList.toggle('hidden', mode !== 'timer');
+            document.getElementById('mini-timer-shortcut').classList.toggle('hidden', mode !== 'matrix');
+            document.getElementById('stats-label').classList.toggle('hidden', mode !== 'matrix');
+            document.getElementById('page-title').innerText = mode === 'matrix' ? 'ASTRA MATRIX' : 'ASTRA TIMER';
             
-            document.getElementById('btn-matrix').classList.toggle('active', mode === 'matrix');
-            document.getElementById('btn-timer').classList.toggle('active', mode === 'timer');
-            
-            if (mode === 'matrix') renderTasks();
+            document.getElementById('nav-matrix').classList.toggle('active', mode === 'matrix');
+            document.getElementById('nav-timer').classList.toggle('active', mode === 'timer');
+            if(mode === 'matrix') renderTasks();
         }
 
-        // --- كود الساعة (Timer Logic) ---
-        let timeLeft = 25 * 60;
-        let totalTime = 25 * 60;
-        let timerInterval = null;
-        const circle = document.getElementById('progress-circle');
-        const circumference = 2 * Math.PI * 45;
-
-        // تهيئة الدائرة
-        circle.style.strokeDasharray = `${circumference} ${circumference}`;
-
-        function updateTimerDisplay() {
-            const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-            const secs = (timeLeft % 60).toString().padStart(2, '0');
-            document.getElementById('time-display').innerText = `${mins}:${secs}`;
-            
-            const offset = circumference - (timeLeft / totalTime) * circumference;
-            circle.style.strokeDashoffset = offset;
+        // --- نظام الـ Picker ---
+        function initPicker(id, max) {
+            const el = document.getElementById(id);
+            for(let i=-2; i<=max+2; i++) {
+                const item = document.createElement('div');
+                item.className = 'picker-item';
+                if(i>=0 && i<=max) {
+                    item.innerText = i.toString().padStart(2, '0');
+                    item.dataset.val = i;
+                }
+                el.appendChild(item);
+            }
+            el.addEventListener('scroll', () => {
+                const items = el.querySelectorAll('.picker-item');
+                items.forEach(it => {
+                    const rect = it.getBoundingClientRect();
+                    const center = el.getBoundingClientRect().top + 100;
+                    if(Math.abs(rect.top + 25 - center) < 25) {
+                        items.forEach(x => x.classList.remove('active'));
+                        it.classList.add('active');
+                    }
+                });
+            });
+            el.scrollTop = 0;
         }
+
+        initPicker('p-h', 23); initPicker('p-m', 59); initPicker('p-s', 59);
+
+        // --- منطق المؤقت ---
+        let timeLeft = 0, totalTime = 0, timerInt = null;
 
         function toggleTimer() {
-            const btn = document.getElementById('startBtn');
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-                btn.innerText = "استئناف";
-                btn.classList.replace('bg-rose-600', 'bg-indigo-600');
+            if(timerInt) {
+                clearInterval(timerInt); timerInt = null;
+                updateUI(false);
             } else {
-                btn.innerText = "إيقاف";
-                btn.classList.replace('bg-indigo-600', 'bg-rose-600');
-                timerInterval = setInterval(() => {
-                    if (timeLeft > 0) {
-                        timeLeft--;
-                        updateTimerDisplay();
+                if(timeLeft <= 0) {
+                    const h = parseInt(document.querySelector('#p-h .active')?.dataset.val || 0);
+                    const m = parseInt(document.querySelector('#p-m .active')?.dataset.val || 0);
+                    const s = parseInt(document.querySelector('#p-s .active')?.dataset.val || 0);
+                    timeLeft = (h * 3600) + (m * 60) + s;
+                    totalTime = timeLeft;
+                }
+                if(timeLeft <= 0) return;
+
+                document.getElementById('timer-setup').classList.add('hidden');
+                document.getElementById('timer-running').classList.remove('hidden');
+                updateUI(true);
+
+                timerInt = setInterval(() => {
+                    if(timeLeft > 0) {
+                        timeLeft--; updateDisplay();
                     } else {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                        btn.innerText = "ابدأ";
-                        alert("انتهى الوقت!");
-                        resetTimer();
+                        clearInterval(timerInt); timerInt = null;
+                        alert("انتهى المؤقت!"); resetTimer();
                     }
                 }, 1000);
             }
         }
 
-        function setTime(m) {
-            totalTime = m * 60;
-            timeLeft = totalTime;
-            if(timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            document.getElementById('startBtn').innerText = "ابدأ";
-            document.getElementById('startBtn').classList.replace('bg-rose-600', 'bg-indigo-600');
-            updateTimerDisplay();
+        function updateDisplay() {
+            const h = Math.floor(timeLeft/3600).toString().padStart(2,'0');
+            const m = Math.floor((timeLeft%3600)/60).toString().padStart(2,'0');
+            const s = (timeLeft%60).toString().padStart(2,'0');
+            const timeStr = `${h}:${m}:${s}`;
+            document.getElementById('big-time').innerText = timeStr;
+            document.getElementById('mini-time').innerText = `${m}:${s}`;
+            const offset = 301.59 - (timeLeft/totalTime) * 301.59;
+            document.getElementById('prog-circle').style.strokeDashoffset = offset;
         }
 
-        function resetTimer() { setTime(totalTime / 60); }
+        function updateUI(run) {
+            document.getElementById('svg-play').classList.toggle('hidden', run);
+            document.getElementById('svg-pause').classList.toggle('hidden', !run);
+        }
 
-        // --- كود المصفوفة (Matrix Logic) ---
-        let tasks = JSON.parse(localStorage.getItem('astra_matrix_tasks')) || [];
+        function resetTimer() {
+            clearInterval(timerInt); timerInt = null;
+            timeLeft = 0;
+            document.getElementById('timer-setup').classList.remove('hidden');
+            document.getElementById('timer-running').classList.add('hidden');
+            document.getElementById('mini-time').innerText = "00:00";
+            updateUI(false);
+        }
 
+        function quickStart(mins, label) {
+            resetTimer();
+            timeLeft = mins * 60; totalTime = timeLeft;
+            toggleTimer();
+        }
+
+        // --- منطق المصفوفة ---
         function renderTasks() {
-            const ids = ['do', 'schedule', 'delegate', 'delete'];
-            ids.forEach(id => {
-                const el = document.getElementById('taskList-' + id);
-                if(el) el.innerHTML = '';
-            });
-            
-            tasks.forEach((task, index) => {
-                const list = document.getElementById('taskList-' + task.quadrant);
-                if (!list) return;
-                const div = document.createElement('div');
-                div.className = `glass-card p-4 rounded-2xl flex items-center justify-between group transition-all ${task.completed ? 'task-done' : ''}`;
-                div.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${index})" class="w-5 h-5 accent-indigo-500 cursor-pointer">
-                        <span class="text-sm ${task.completed ? 'line-through opacity-50' : ''}">${task.text}</span>
+            ['do','schedule','delegate','delete'].forEach(id => document.getElementById('list-'+id).innerHTML='');
+            tasks.forEach((t, i) => {
+                const list = document.getElementById('list-'+t.quadrant);
+                const d = document.createElement('div');
+                d.className = `glass-card p-3 rounded-2xl flex items-center justify-between ${t.completed?'opacity-30':''}`;
+                d.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" ${t.completed?'checked':''} onchange="toggleTask(${i})" class="w-4 h-4 accent-indigo-500">
+                        <span class="text-xs ${t.completed?'line-through opacity-50':''}">${t.text}</span>
                     </div>
-                    <button onclick="deleteTask(${index})" class="text-white/20 hover:text-red-400 transition-colors">✕</button>
+                    <button onclick="deleteTask(${i})" class="text-[10px] opacity-20 hover:opacity-100 transition-opacity">✕</button>
                 `;
-                list.appendChild(div);
+                list.appendChild(d);
             });
-            updateStats();
+            const done = tasks.filter(t=>t.completed).length;
+            document.getElementById('comp-rate').innerText = (tasks.length?Math.round((done/tasks.length)*100):0)+'%';
         }
 
         function addTask() {
-            const input = document.getElementById('taskInput');
-            const quad = document.getElementById('quadSelect').value;
-            if (input.value.trim()) {
-                tasks.unshift({ text: input.value, completed: false, quadrant: quad });
-                saveAndRender();
-                input.value = '';
+            const val = document.getElementById('taskInput').value;
+            if(val.trim()){
+                tasks.unshift({text: val, quadrant: document.getElementById('quadSelect').value, completed: false});
+                save(); document.getElementById('taskInput').value='';
             }
         }
+        function toggleTask(i) { tasks[i].completed = !tasks[i].completed; save(); }
+        function deleteTask(i) { tasks.splice(i, 1); save(); }
+        function save() { localStorage.setItem('astra_tasks_v2', JSON.stringify(tasks)); renderTasks(); }
 
-        function toggleTask(index) { tasks[index].completed = !tasks[index].completed; saveAndRender(); }
-        function deleteTask(index) { tasks.splice(index, 1); saveAndRender(); }
-        function saveAndRender() {
-            localStorage.setItem('astra_matrix_tasks', JSON.stringify(tasks));
-            renderTasks();
-        }
-
-        function updateStats() {
-            const done = tasks.filter(t => t.completed).length;
-            const perc = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
-            const rateEl = document.getElementById('completion-rate');
-            if(rateEl) rateEl.innerText = perc + '%';
-        }
-
-        // بدء التشغيل
-        window.addEventListener('DOMContentLoaded', () => {
-            switchMode(currentMode);
-            updateTimerDisplay();
-        });
+        window.onload = () => switchMode('matrix');
     </script>
 </body>
 </html>
