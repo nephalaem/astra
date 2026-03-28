@@ -9,7 +9,7 @@
     
     <style>
         :root {
-            /* القيمة الافتراضية - ستتغير برمجياً فوراً */
+            /* القيمة الافتراضية - يتم استبدالها فوراً من الـ LocalStorage */
             --primary-color: #6366f1; 
         }
 
@@ -41,13 +41,13 @@
             transform: translateX(-5px);
         }
 
-        /* تنسيقات تعتمد على المتغير البرمجي بقوة إضافية */
+        /* تنسيقات تعتمد على الثيم المختار */
         .text-primary { color: var(--primary-color) !important; }
         .bg-primary { background-color: var(--primary-color) !important; }
         .border-primary { border-color: var(--primary-color) !important; }
         .accent-primary { accent-color: var(--primary-color) !important; }
         
-        /* تلوين الـ SVG بناءً على الثيم */
+        /* تلوين الـ SVG */
         .svg-primary { stroke: var(--primary-color) !important; }
         
         #add-btn {
@@ -55,7 +55,18 @@
             transition: all 0.3s ease;
         }
 
-        /* تأثير التوهج للثيم المختار */
+        /* تنسيق موحد لمربعات المصفوفة يعتمد على الثيم */
+        .matrix-box {
+            border-right: 3px solid var(--primary-color) !important;
+            box-shadow: 0 4px 15px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .matrix-title {
+            color: var(--primary-color);
+            opacity: 0.9;
+        }
+
+        /* تأثير التوهج للثيم المختار في الإعدادات */
         .theme-dot.active {
             outline: 2px solid white;
             outline-offset: 2px;
@@ -63,7 +74,7 @@
         }
     </style>
     
-    <!-- كود الحقن المباشر للثيم - يعمل قبل أي شيء آخر لمنع الوميض أو العودة للأزرق -->
+    <!-- كود الحقن الفوري: يمنع وميض اللون الافتراضي -->
     <script>
         (function() {
             const savedTheme = localStorage.getItem('astra_theme');
@@ -118,11 +129,11 @@
             </div>
         </div>
 
-        <!-- المربعات الأربعة -->
+        <!-- المربعات الأربعة (تم إزالة الألوان الثابتة وربطها بالثيم) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- الربع 1 -->
-            <div class="glass-card p-5 rounded-3xl border-r-2 border-red-500/50">
-                <h3 class="text-red-400 font-bold mb-4 text-sm flex items-center justify-between">
+            <div class="glass-card p-5 rounded-3xl matrix-box">
+                <h3 class="matrix-title font-bold mb-4 text-sm flex items-center justify-between">
                     <span>🔴 افعل الآن (عاجل وهام)</span>
                     <span class="text-[10px] opacity-20">DO</span>
                 </h3>
@@ -130,8 +141,8 @@
             </div>
 
             <!-- الربع 2 -->
-            <div class="glass-card p-5 rounded-3xl border-r-2 border-blue-500/50">
-                <h3 class="text-blue-400 font-bold mb-4 text-sm flex items-center justify-between">
+            <div class="glass-card p-5 rounded-3xl matrix-box">
+                <h3 class="matrix-title font-bold mb-4 text-sm flex items-center justify-between">
                     <span>🔵 خطط لها (هام غير عاجل)</span>
                     <span class="text-[10px] opacity-20">SCHEDULE</span>
                 </h3>
@@ -139,8 +150,8 @@
             </div>
 
             <!-- الربع 3 -->
-            <div class="glass-card p-5 rounded-3xl border-r-2 border-orange-500/50">
-                <h3 class="text-orange-400 font-bold mb-4 text-sm flex items-center justify-between">
+            <div class="glass-card p-5 rounded-3xl matrix-box">
+                <h3 class="matrix-title font-bold mb-4 text-sm flex items-center justify-between">
                     <span>🟠 فوّضها (عاجل غير هام)</span>
                     <span class="text-[10px] opacity-20">DELEGATE</span>
                 </h3>
@@ -148,9 +159,9 @@
             </div>
 
             <!-- الربع 4 -->
-            <div class="glass-card p-5 rounded-3xl border-r-2 border-gray-500/50">
-                <h3 class="text-gray-400 font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>⚪ احذفها (غير هام وعاجل)</span>
+            <div class="glass-card p-5 rounded-3xl matrix-box">
+                <h3 class="matrix-title font-bold mb-4 text-sm flex items-center justify-between">
+                    <span>⚪ احذفها (غير هام وغير عاجل)</span>
                     <span class="text-[10px] opacity-20">DELETE</span>
                 </h3>
                 <div id="list-delete" class="space-y-2 min-h-[100px]"></div>
@@ -162,17 +173,19 @@
         // إدارة البيانات
         let tasks = JSON.parse(localStorage.getItem('astra_tasks_pure')) || [];
         
-        // دالة تحديث الثيم وحفظه
+        // دالة تحديث الثيم وحفظه - تم تعزيزها لضمان الثبات
         function updateTheme(color) {
-            if(!color) color = localStorage.getItem('astra_theme') || '#6366f1'; 
+            if(!color) {
+                color = localStorage.getItem('astra_theme') || '#6366f1';
+            }
             
-            // 1. تحديث المتغير الأساسي في الـ CSS
+            // تطبيق اللون على CSS Variable
             document.documentElement.style.setProperty('--primary-color', color);
             
-            // 2. الحفظ في الذاكرة
+            // الحفظ في LocalStorage
             localStorage.setItem('astra_theme', color);
             
-            // 3. تحديث مظهر أزرار اختيار اللون (إضافة علامة للنشط)
+            // تحديث حالة الأزرار
             document.querySelectorAll('.theme-dot').forEach(dot => {
                 if(dot.getAttribute('data-color') === color) {
                     dot.classList.add('active');
@@ -181,7 +194,7 @@
                 }
             });
 
-            // 4. تحديث الظل البرمجي لزر الإضافة
+            // تحديث ظل زر الإضافة
             const addBtn = document.getElementById('add-btn');
             if(addBtn) {
                 addBtn.style.boxShadow = `0 10px 20px -5px ${color}66`;
@@ -244,14 +257,14 @@
             renderTasks();
         }
 
-        // التنفيذ عند تحميل الصفحة بالكامل
-        document.addEventListener('DOMContentLoaded', () => {
+        // عند تحميل الصفحة
+        window.addEventListener('load', () => {
             const savedTheme = localStorage.getItem('astra_theme') || '#6366f1';
             updateTheme(savedTheme); 
             renderTasks();
         });
 
-        // مراقبة التغييرات في localStorage من صفحات أخرى (لضمان المزامنة)
+        // مزامنة الثيم عبر التبويبات
         window.addEventListener('storage', (e) => {
             if (e.key === 'astra_theme') {
                 updateTheme(e.newValue);
