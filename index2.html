@@ -9,7 +9,7 @@
     
     <style>
         :root {
-            /* القيمة الافتراضية - يتم استبدالها فوراً من الـ LocalStorage */
+            /* القيمة الافتراضية للثيم العام */
             --primary-color: #6366f1; 
         }
 
@@ -41,29 +41,17 @@
             transform: translateX(-5px);
         }
 
-        /* تنسيقات تعتمد على الثيم المختار */
+        /* تنسيقات الثيم المختار من الإعدادات */
         .text-primary { color: var(--primary-color) !important; }
         .bg-primary { background-color: var(--primary-color) !important; }
         .border-primary { border-color: var(--primary-color) !important; }
         .accent-primary { accent-color: var(--primary-color) !important; }
         
-        /* تلوين الـ SVG */
         .svg-primary { stroke: var(--primary-color) !important; }
         
         #add-btn {
             background-color: var(--primary-color) !important;
             transition: all 0.3s ease;
-        }
-
-        /* تنسيق موحد لمربعات المصفوفة يعتمد على الثيم */
-        .matrix-box {
-            border-right: 3px solid var(--primary-color) !important;
-            box-shadow: 0 4px 15px -5px rgba(0, 0, 0, 0.3);
-        }
-
-        .matrix-title {
-            color: var(--primary-color);
-            opacity: 0.9;
         }
 
         /* تأثير التوهج للثيم المختار في الإعدادات */
@@ -72,9 +60,20 @@
             outline-offset: 2px;
             transform: scale(1.2);
         }
+
+        /* تنسيقات المصفوفة الأصلية بالألوان المحددة */
+        .box-do { border-right: 3px solid #f87171 !important; }
+        .box-schedule { border-right: 3px solid #60a5fa !important; }
+        .box-delegate { border-right: 3px solid #fb923c !important; }
+        .box-delete { border-right: 3px solid #9ca3af !important; }
+
+        .title-do { color: #f87171; }
+        .title-schedule { color: #60a5fa; }
+        .title-delegate { color: #fb923c; }
+        .title-delete { color: #9ca3af; }
     </style>
     
-    <!-- كود الحقن الفوري: يمنع وميض اللون الافتراضي -->
+    <!-- كود الحقن الفوري للثيم المختار -->
     <script>
         (function() {
             const savedTheme = localStorage.getItem('astra_theme');
@@ -98,7 +97,7 @@
         </div>
         
         <div class="flex items-center gap-6">
-            <!-- اختيار الثيم -->
+            <!-- اختيار الثيم العام -->
             <div class="flex gap-3 p-2 glass-card rounded-xl">
                 <button onclick="updateTheme('#6366f1')" data-color="#6366f1" class="theme-dot w-5 h-5 rounded-full bg-[#6366f1] border border-white/10 hover:scale-110 transition-all"></button>
                 <button onclick="updateTheme('#ec4899')" data-color="#ec4899" class="theme-dot w-5 h-5 rounded-full bg-[#ec4899] border border-white/10 hover:scale-110 transition-all"></button>
@@ -129,11 +128,11 @@
             </div>
         </div>
 
-        <!-- المربعات الأربعة (تم إزالة الألوان الثابتة وربطها بالثيم) -->
+        <!-- المربعات الأربعة بالألوان الأصلية -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- الربع 1 -->
-            <div class="glass-card p-5 rounded-3xl matrix-box">
-                <h3 class="matrix-title font-bold mb-4 text-sm flex items-center justify-between">
+            <div class="glass-card p-5 rounded-3xl box-do">
+                <h3 class="title-do font-bold mb-4 text-sm flex items-center justify-between">
                     <span>🔴 افعل الآن (عاجل وهام)</span>
                     <span class="text-[10px] opacity-20">DO</span>
                 </h3>
@@ -141,8 +140,8 @@
             </div>
 
             <!-- الربع 2 -->
-            <div class="glass-card p-5 rounded-3xl matrix-box">
-                <h3 class="matrix-title font-bold mb-4 text-sm flex items-center justify-between">
+            <div class="glass-card p-5 rounded-3xl box-schedule">
+                <h3 class="title-schedule font-bold mb-4 text-sm flex items-center justify-between">
                     <span>🔵 خطط لها (هام غير عاجل)</span>
                     <span class="text-[10px] opacity-20">SCHEDULE</span>
                 </h3>
@@ -150,8 +149,8 @@
             </div>
 
             <!-- الربع 3 -->
-            <div class="glass-card p-5 rounded-3xl matrix-box">
-                <h3 class="matrix-title font-bold mb-4 text-sm flex items-center justify-between">
+            <div class="glass-card p-5 rounded-3xl box-delegate">
+                <h3 class="title-delegate font-bold mb-4 text-sm flex items-center justify-between">
                     <span>🟠 فوّضها (عاجل غير هام)</span>
                     <span class="text-[10px] opacity-20">DELEGATE</span>
                 </h3>
@@ -159,8 +158,8 @@
             </div>
 
             <!-- الربع 4 -->
-            <div class="glass-card p-5 rounded-3xl matrix-box">
-                <h3 class="matrix-title font-bold mb-4 text-sm flex items-center justify-between">
+            <div class="glass-card p-5 rounded-3xl box-delete">
+                <h3 class="title-delete font-bold mb-4 text-sm flex items-center justify-between">
                     <span>⚪ احذفها (غير هام وغير عاجل)</span>
                     <span class="text-[10px] opacity-20">DELETE</span>
                 </h3>
@@ -170,22 +169,15 @@
     </div>
 
     <script>
-        // إدارة البيانات
         let tasks = JSON.parse(localStorage.getItem('astra_tasks_pure')) || [];
         
-        // دالة تحديث الثيم وحفظه - تم تعزيزها لضمان الثبات
         function updateTheme(color) {
             if(!color) {
                 color = localStorage.getItem('astra_theme') || '#6366f1';
             }
-            
-            // تطبيق اللون على CSS Variable
             document.documentElement.style.setProperty('--primary-color', color);
-            
-            // الحفظ في LocalStorage
             localStorage.setItem('astra_theme', color);
             
-            // تحديث حالة الأزرار
             document.querySelectorAll('.theme-dot').forEach(dot => {
                 if(dot.getAttribute('data-color') === color) {
                     dot.classList.add('active');
@@ -194,7 +186,6 @@
                 }
             });
 
-            // تحديث ظل زر الإضافة
             const addBtn = document.getElementById('add-btn');
             if(addBtn) {
                 addBtn.style.boxShadow = `0 10px 20px -5px ${color}66`;
@@ -257,14 +248,12 @@
             renderTasks();
         }
 
-        // عند تحميل الصفحة
         window.addEventListener('load', () => {
             const savedTheme = localStorage.getItem('astra_theme') || '#6366f1';
             updateTheme(savedTheme); 
             renderTasks();
         });
 
-        // مزامنة الثيم عبر التبويبات
         window.addEventListener('storage', (e) => {
             if (e.key === 'astra_theme') {
                 updateTheme(e.newValue);
