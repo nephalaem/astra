@@ -7,275 +7,262 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, query, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Configuration (Provided by environment)
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'astra-tasks';
-
-        let userUid = null;
-        let tasks = [];
-        let currentFilter = 'all';
-        let currentLang = 'ar';
-
-        // Localization Dictionary
-        const i18n = {
-            ar: {
-                brand: "ASTRA", slogan: "نظّم مهامك بذكاء", rate: "نسبة الإنجاز",
-                inputPlaceholder: "ما هي مهمتك التالية؟", add: "إضافة",
-                filterAll: "الكل", filterActive: "قيد التنفيذ", filterCompleted: "المكتملة",
-                empty: "لا توجد مهام حالياً", themes: "اختر السمة (15 ثيم)",
-                clearAll: "مسح كافة المهام", version: "معلومات الإصدار", langLabel: "اللغة",
-                confirmTitle: "حذف جميع المهام؟", confirmBody: "لا يمكنك التراجع عن هذه الخطوة.",
-                confirmBtn: "نعم، احذف", cancelBtn: "إلغاء", toastSaved: "تم الحفظ سحابياً", toastCleared: "تم مسح الكل"
-            },
-            en: {
-                brand: "ASTRA", slogan: "Organize smartly", rate: "Completion Rate",
-                inputPlaceholder: "What's next?", add: "Add",
-                filterAll: "All", filterActive: "Active", filterCompleted: "Completed",
-                empty: "No tasks yet", themes: "Themes",
-                clearAll: "Clear All", version: "Version Info", langLabel: "Language",
-                confirmTitle: "Delete all?", confirmBody: "This is irreversible.",
-                confirmBtn: "Yes, delete", cancelBtn: "Cancel", toastSaved: "Saved to cloud", toastCleared: "Cleared all"
-            },
-            fr: {
-                brand: "ASTRA", slogan: "Organisez intelligemment", rate: "Taux",
-                inputPlaceholder: "Quelle est la suite ?", add: "Ajouter",
-                filterAll: "Tout", filterActive: "Actif", filterCompleted: "Terminé",
-                empty: "Aucune tâche", themes: "Thèmes",
-                clearAll: "Tout effacer", version: "Infos", langLabel: "Langue",
-                confirmTitle: "Tout supprimer ?", confirmBody: "Action irréversible.",
-                confirmBtn: "Oui", cancelBtn: "Annuler", toastSaved: "Enregistré", toastCleared: "Effacé"
-            }
-        };
-
-        // UI Logic
-        window.setLanguage = (lang) => {
-            currentLang = lang;
-            document.documentElement.lang = lang;
-            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-            document.body.style.fontFamily = lang === 'ar' ? "'Tajawal', sans-serif" : "'Inter', sans-serif";
-            updateUIStrings();
-            renderTasks(currentFilter);
-        };
-
-        function updateUIStrings() {
-            const s = i18n[currentLang];
-            document.getElementById('brand-name').innerText = s.brand;
-            document.getElementById('slogan').innerText = s.slogan;
-            document.getElementById('rate-label').innerText = s.rate;
-            document.getElementById('taskInput').placeholder = s.inputPlaceholder;
-            document.getElementById('addBtn').innerText = s.add;
-            document.getElementById('theme-label').innerText = s.themes;
-            document.getElementById('clear-btn-text').innerText = s.clearAll;
-            document.getElementById('version-btn-text').innerText = s.version;
-            document.getElementById('lang-label').innerText = s.langLabel;
-            document.getElementById('empty-text').innerText = s.empty;
-            document.getElementById('confirm-title').innerText = s.confirmTitle;
-            document.getElementById('confirm-body').innerText = s.confirmBody;
-            document.getElementById('confirm-btn-action').innerText = s.confirmBtn;
-            document.getElementById('confirm-cancel-btn').innerText = s.cancelBtn;
-            
-            const btns = document.querySelectorAll('.filter-btn');
-            btns[0].innerText = s.filterAll; btns[1].innerText = s.filterActive; btns[2].innerText = s.filterCompleted;
-        }
-
-        // Firebase Operations (Rule 3: Auth First)
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userUid = user.uid;
-                setupRealtimeListener();
-            } else {
-                signInAnonymously(auth);
-            }
-        });
-
-        function setupRealtimeListener() {
-            if (!userUid) return;
-            const tasksRef = collection(db, 'artifacts', appId, 'users', userUid, 'tasks');
-            onSnapshot(tasksRef, (snap) => {
-                tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                tasks.sort((a, b) => b.createdAt - a.createdAt);
-                renderTasks(currentFilter);
-            }, (err) => console.error(err));
-        }
-
-        window.addTask = async () => {
-            const input = document.getElementById('taskInput');
-            const val = input.value.trim();
-            if (val && userUid) {
-                const id = Date.now().toString();
-                await setDoc(doc(db, 'artifacts', appId, 'users', userUid, 'tasks', id), {
-                    text: val, completed: false, createdAt: Date.now()
-                });
-                input.value = '';
-                showToast(i18n[currentLang].toastSaved);
-            }
-        };
-
-        window.toggleTask = async (id, done) => {
-            if (!userUid) return;
-            if (!done) { playBell(); createConfetti(document.querySelector(`input[data-id="${id}"]`)); }
-            await updateDoc(doc(db, 'artifacts', appId, 'users', userUid, 'tasks', id), { completed: !done });
-        };
-
-        window.deleteTask = async (id) => {
-            if (userUid) await deleteDoc(doc(db, 'artifacts', appId, 'users', userUid, 'tasks', id));
-        };
-
-        window.clearAllTasks = async () => {
-            for (const t of tasks) await deleteTask(t.id);
-            closeConfirmModal();
-            showToast(i18n[currentLang].toastCleared);
-        };
-
-        window.renderTasks = (f = currentFilter) => {
-            currentFilter = f;
-            const list = document.getElementById('taskList');
-            const empty = document.getElementById('emptyState');
-            list.innerHTML = '';
-            let filtered = tasks;
-            if (f === 'active') filtered = tasks.filter(t => !t.completed);
-            if (f === 'completed') filtered = tasks.filter(t => t.completed);
-            
-            if (filtered.length === 0) empty.classList.remove('hidden');
-            else {
-                empty.classList.add('hidden');
-                filtered.forEach(t => {
-                    const d = document.createElement('div');
-                    d.className = `glass-card rounded-2xl p-4 flex items-center gap-4 transition-all ${t.completed ? 'opacity-40 scale-95' : ''}`;
-                    d.innerHTML = `
-                        <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask('${t.id}', ${t.completed})" data-id="${t.id}" class="w-6 h-6 rounded-full cursor-pointer">
-                        <span class="flex-grow text-lg ${t.completed ? 'line-through' : ''}">${t.text}</span>
-                        <button onclick="deleteTask('${t.id}')" class="text-white/20 hover:text-red-400 p-2">✕</button>
-                    `;
-                    list.appendChild(d);
-                });
-            }
-            const doneCount = tasks.filter(t => t.completed).length;
-            document.getElementById('completion-rate').innerText = tasks.length ? Math.round((doneCount/tasks.length)*100)+'%' : '0%';
-        };
-
-        updateUIStrings();
-    </script>
-
     <style>
         :root { --accent: #6366f1; }
-        body { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); background-attachment: fixed; min-height: 100vh; transition: 0.5s; }
-        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .filter-btn.active { border-bottom: 2px solid var(--accent); opacity: 1; }
-        #settingsMenu { display: none; } #settingsMenu.show { display: block; }
-        .theme-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1px solid white; }
-        #confirmModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; }
+        body { 
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); 
+            background-attachment: fixed; 
+            min-height: 100vh; 
+            transition: all 0.5s ease;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .filter-btn.active { border-bottom: 2px solid var(--accent); opacity: 1; color: var(--accent); }
+        #settingsMenu { display: none; z-index: 100; }
+        #settingsMenu.show { display: block; animation: slideDown 0.2s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .theme-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,0.2); transition: 0.2s; }
+        .theme-dot:hover { transform: scale(1.2); border-color: white; }
+        #confirmModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 200; align-items: center; justify-content: center; }
         #confirmModal.show { display: flex; }
-        .confetti { position: absolute; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; }
+        .confetti { position: absolute; pointer-events: none; z-index: 50; border-radius: 50%; }
     </style>
 </head>
-<body class="text-white p-4 md:p-10 font-sans">
+<body class="text-white p-4 md:p-10">
 
     <div class="max-w-xl mx-auto">
         <header class="flex justify-between items-center mb-10">
             <div class="text-start">
-                <span class="text-3xl font-bold" id="completion-rate">0%</span>
+                <span class="text-4xl font-bold" id="completion-rate">0%</span>
                 <p class="text-[10px] uppercase opacity-50 tracking-widest" id="rate-label">نسبة الإنجاز</p>
             </div>
             <div class="flex items-center gap-4">
                 <div class="text-end">
-                    <h1 class="text-3xl font-bold text-indigo-300" id="brand-name">ASTRA</h1>
+                    <h1 class="text-4xl font-bold tracking-tighter" id="brand-name" style="color: #a5b4fc;">ASTRA</h1>
                     <p class="text-xs opacity-50" id="slogan">نظّم مهامك بذكاء</p>
                 </div>
-                <button onclick="document.getElementById('settingsMenu').classList.toggle('show')" class="p-2 glass-card rounded-lg">⚙️</button>
+                <button onclick="toggleMenu()" class="p-3 glass-card rounded-xl hover:bg-white/10 transition-colors">⚙️</button>
             </div>
         </header>
 
-        <!-- Settings Menu -->
-        <div id="settingsMenu" class="glass-card rounded-2xl p-4 mb-6 relative">
-            <h3 class="text-xs font-bold opacity-50 mb-3" id="theme-label">السمات</h3>
-            <div class="flex gap-2 mb-4">
-                <div class="theme-dot" style="background: #6366f1" onclick="document.body.style.background='linear-gradient(135deg, #1e1b4b, #312e81)'"></div>
-                <div class="theme-dot" style="background: #10b981" onclick="document.body.style.background='linear-gradient(135deg, #064e3b, #065f46)'"></div>
-                <div class="theme-dot" style="background: #f59e0b" onclick="document.body.style.background='linear-gradient(135deg, #451a03, #78350f)'"></div>
-            </div>
-            <div class="flex items-center justify-between text-sm">
-                <span id="lang-label">اللغة</span>
-                <select onchange="setLanguage(this.value)" class="bg-white/10 rounded p-1 outline-none">
+        <div id="settingsMenu" class="glass-card rounded-3xl p-6 mb-8 shadow-2xl border-white/20">
+            <h3 class="text-xs font-bold opacity-50 mb-4 uppercase tracking-wider" id="theme-label">اختر السمة (15 ثيم)</h3>
+            <div class="grid grid-cols-5 gap-3 mb-6" id="themeGrid"></div>
+            
+            <div class="flex items-center justify-between bg-white/5 p-3 rounded-2xl">
+                <span class="text-sm font-medium" id="lang-label">لغة التطبيق</span>
+                <select onchange="changeLanguage(this.value)" class="bg-indigo-900/50 text-white text-xs border-none rounded-lg p-2 outline-none">
                     <option value="ar">العربية</option>
                     <option value="en">English</option>
                     <option value="fr">Français</option>
                 </select>
             </div>
-            <hr class="my-4 border-white/10">
-            <button onclick="document.getElementById('confirmModal').classList.add('show')" class="text-red-400 text-sm w-full text-right" id="clear-btn-text">مسح الكل</button>
-            <p class="text-[9px] mt-2 opacity-30 text-center" id="version-btn-text">Version 2.5</p>
+            
+            <hr class="my-6 border-white/10">
+            <button onclick="openModal()" class="w-full text-center py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-2xl text-sm font-bold transition-colors" id="clear-btn-text">مسح جميع المهام</button>
         </div>
 
-        <!-- Input -->
-        <div class="flex gap-2 p-1 glass-card rounded-2xl mb-8">
-            <input type="text" id="taskInput" class="bg-transparent flex-grow p-3 outline-none" placeholder="...">
-            <button onclick="addTask()" id="addBtn" class="bg-indigo-600 px-6 rounded-xl font-bold">إضافة</button>
+        <div class="flex gap-2 p-1.5 glass-card rounded-2xl mb-8 items-center shadow-lg">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-3 outline-none text-lg" placeholder="أضف مهمة جديدة...">
+            <button onclick="addTask()" id="addBtn" class="bg-indigo-600 hover:bg-indigo-500 px-8 py-3 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-indigo-500/20">إضافة</button>
         </div>
 
-        <!-- Filters -->
-        <div class="flex gap-4 mb-6 text-xs opacity-60">
-            <button onclick="renderTasks('all')" class="filter-btn active">الكل</button>
-            <button onclick="renderTasks('active')" class="filter-btn">قيد التنفيذ</button>
-            <button onclick="renderTasks('completed')" class="filter-btn">المكتملة</button>
+        <div class="flex gap-8 mb-6 text-xs font-bold uppercase tracking-widest opacity-60">
+            <button onclick="setFilter('all')" class="filter-btn active pb-2" id="f-all">الكل</button>
+            <button onclick="setFilter('active')" class="filter-btn pb-2" id="f-active">قيد التنفيذ</button>
+            <button onclick="setFilter('completed')" class="filter-btn pb-2" id="f-completed">المكتملة</button>
         </div>
 
-        <div id="taskList" class="space-y-3"></div>
-        <div id="emptyState" class="text-center py-20 opacity-20 hidden">
-            <p id="empty-text">لا توجد مهام</p>
+        <div id="taskList" class="space-y-4"></div>
+        
+        <div id="emptyState" class="text-center py-24 opacity-20 hidden">
+            <p class="text-5xl mb-4">✨</p>
+            <p id="empty-text" class="text-xl">لا توجد مهام حالياً</p>
         </div>
     </div>
 
-    <!-- Modals & Toasts -->
     <div id="confirmModal">
-        <div class="glass-card p-8 rounded-3xl max-w-xs text-center">
-            <h2 class="text-xl font-bold mb-2" id="confirm-title">؟</h2>
-            <p class="text-sm opacity-60 mb-6" id="confirm-body">...</p>
-            <div class="flex gap-2">
-                <button onclick="clearAllTasks()" id="confirm-btn-action" class="bg-red-600 flex-1 py-2 rounded-lg">حذف</button>
-                <button onclick="document.getElementById('confirmModal').classList.remove('show')" id="confirm-cancel-btn" class="bg-white/10 flex-1 py-2 rounded-lg">إلغاء</button>
+        <div class="glass-card p-8 rounded-[2rem] max-w-xs w-full text-center border-white/20">
+            <h2 class="text-2xl font-bold mb-3" id="confirm-title">حذف الكل؟</h2>
+            <p class="text-sm opacity-60 mb-8" id="confirm-body">هل أنت متأكد؟ لا يمكن استرجاع المهام بعد حذفها.</p>
+            <div class="flex gap-3">
+                <button onclick="clearAll()" id="confirm-btn-action" class="flex-1 bg-red-600 hover:bg-red-500 py-3 rounded-2xl font-bold">نعم، احذف</button>
+                <button onclick="closeModal()" id="confirm-cancel-btn" class="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-2xl font-bold">إلغاء</button>
             </div>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-indigo-600 px-6 py-2 rounded-full opacity-0 transition-all pointer-events-none"></div>
-
     <script>
-        function playBell() {
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = 800; gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-            osc.start(); osc.stop(ctx.currentTime + 0.5);
+        // --- البيانات والترجمة ---
+        let tasks = JSON.parse(localStorage.getItem('astra_tasks')) || [];
+        let currentFilter = 'all';
+        let currentLang = 'ar';
+
+        const i18n = {
+            ar: { rate: "نسبة الإنجاز", slogan: "نظّم مهامك بذكاء", placeholder: "أضف مهمة جديدة...", add: "إضافة", themes: "اختر السمة (15 ثيم)", lang: "لغة التطبيق", clear: "مسح جميع المهام", empty: "لا توجد مهام حالياً", all: "الكل", active: "قيد التنفيذ", completed: "المكتملة", cTitle: "حذف الكل؟", cBody: "لا يمكن التراجع عن الحذف.", cBtn: "نعم، احذف", cCan: "إلغاء" },
+            en: { rate: "Completion Rate", slogan: "Organize smartly", placeholder: "Add new task...", add: "Add", themes: "Themes (15)", lang: "Language", clear: "Clear All Tasks", empty: "No tasks yet", all: "All", active: "Active", completed: "Completed", cTitle: "Clear All?", cBody: "This cannot be undone.", cBtn: "Yes, Clear", cCan: "Cancel" },
+            fr: { rate: "Taux de réussite", slogan: "Organisez intelligemment", placeholder: "Ajouter une tâche...", add: "Ajouter", themes: "Thèmes (15)", lang: "Langue", clear: "Tout effacer", empty: "Aucune tâche", all: "Tout", active: "En cours", completed: "Terminé", cTitle: "Tout effacer?", cBody: "Action irréversible.", cBtn: "Oui, effacer", cCan: "Annuler" }
+        };
+
+        const themes = [
+            { bg: 'linear-gradient(135deg, #1e1b4b, #312e81)', accent: '#6366f1' },
+            { bg: 'linear-gradient(135deg, #0f172a, #1e293b)', accent: '#38bdf8' },
+            { bg: 'linear-gradient(135deg, #064e3b, #065f46)', accent: '#34d399' },
+            { bg: 'linear-gradient(135deg, #451a03, #78350f)', accent: '#fbbf24' },
+            { bg: 'linear-gradient(135deg, #4c0519, #831843)', accent: '#fb7185' },
+            { bg: 'linear-gradient(135deg, #1e1e1e, #111111)', accent: '#ffffff' },
+            { bg: 'linear-gradient(135deg, #2e1065, #4338ca)', accent: '#a78bfa' },
+            { bg: 'linear-gradient(135deg, #0c4a6e, #075985)', accent: '#7dd3fc' },
+            { bg: 'linear-gradient(135deg, #3f6212, #4d7c0f)', accent: '#a3e635' },
+            { bg: 'linear-gradient(135deg, #7c2d12, #9a3412)', accent: '#fb923c' },
+            { bg: 'linear-gradient(135deg, #134e4a, #115e59)', accent: '#2dd4bf' },
+            { bg: 'linear-gradient(135deg, #581c87, #6b21a8)', accent: '#d8b4fe' },
+            { bg: 'linear-gradient(135deg, #831843, #9d174d)', accent: '#f472b6' },
+            { bg: 'linear-gradient(135deg, #0f172a, #334155)', accent: '#94a3b8' },
+            { bg: 'linear-gradient(135deg, #1e1b4b, #4338ca)', accent: '#818cf8' }
+        ];
+
+        // --- الوظائف الأساسية ---
+        function renderTasks() {
+            const list = document.getElementById('taskList');
+            list.innerHTML = '';
+            let filtered = tasks;
+            if (currentFilter === 'active') filtered = tasks.filter(t => !t.completed);
+            if (currentFilter === 'completed') filtered = tasks.filter(t => t.completed);
+
+            if (filtered.length === 0) document.getElementById('emptyState').classList.remove('hidden');
+            else document.getElementById('emptyState').classList.add('hidden');
+
+            filtered.forEach((task, index) => {
+                const div = document.createElement('div');
+                div.className = `glass-card p-4 rounded-2xl flex items-center gap-4 transition-all ${task.completed ? 'opacity-40 scale-[0.98]' : ''}`;
+                div.innerHTML = `
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${index})" class="w-6 h-6 rounded-full cursor-pointer accent-indigo-500">
+                    <span class="flex-grow text-lg ${task.completed ? 'line-through' : ''}">${task.text}</span>
+                    <button onclick="deleteTask(${index})" class="text-white/20 hover:text-red-400">✕</button>
+                `;
+                list.appendChild(div);
+            });
+            updateStats();
         }
-        function createConfetti(el) {
-            const r = el.getBoundingClientRect();
-            for(let i=0; i<15; i++) {
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = r.left+'px'; c.style.top = r.top+'px';
-                c.style.background = '#818cf8';
-                document.body.appendChild(c);
-                const tx = (Math.random()-0.5)*150, ty = (Math.random()-0.5)*150;
-                c.animate([{transform:'translate(0,0)', opacity:1}, {transform:`translate(${tx}px,${ty}px)`, opacity:0}], {duration:600}).onfinish = () => c.remove();
+
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            if (input.value.trim()) {
+                tasks.unshift({ text: input.value, completed: false });
+                localStorage.setItem('astra_tasks', JSON.stringify(tasks));
+                input.value = '';
+                renderTasks();
             }
         }
-        function showToast(m) {
-            const t = document.getElementById('toast');
-            t.innerText = m; t.style.opacity = '1';
-            setTimeout(() => t.style.opacity = '0', 2000);
+
+        function toggleTask(index) {
+            tasks[index].completed = !tasks[index].completed;
+            if(tasks[index].completed) {
+                playBell();
+                createConfetti();
+            }
+            localStorage.setItem('astra_tasks', JSON.stringify(tasks));
+            renderTasks();
         }
-        function closeConfirmModal() { document.getElementById('confirmModal').classList.remove('show'); }
+
+        function deleteTask(index) {
+            tasks.splice(index, 1);
+            localStorage.setItem('astra_tasks', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function clearAll() {
+            tasks = [];
+            localStorage.removeItem('astra_tasks');
+            closeModal();
+            renderTasks();
+        }
+
+        function setFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('f-' + f).classList.add('active');
+            renderTasks();
+        }
+
+        // --- واجهة المستخدم والجماليات ---
+        function changeLanguage(lang) {
+            currentLang = lang;
+            const t = i18n[lang];
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            document.getElementById('rate-label').innerText = t.rate;
+            document.getElementById('slogan').innerText = t.slogan;
+            document.getElementById('taskInput').placeholder = t.placeholder;
+            document.getElementById('addBtn').innerText = t.add;
+            document.getElementById('theme-label').innerText = t.themes;
+            document.getElementById('lang-label').innerText = t.lang;
+            document.getElementById('clear-btn-text').innerText = t.clear;
+            document.getElementById('empty-text').innerText = t.empty;
+            document.getElementById('f-all').innerText = t.all;
+            document.getElementById('f-active').innerText = t.active;
+            document.getElementById('f-completed').innerText = t.completed;
+            document.getElementById('confirm-title').innerText = t.cTitle;
+            document.getElementById('confirm-body').innerText = t.cBody;
+            document.getElementById('confirm-btn-action').innerText = t.cBtn;
+            document.getElementById('confirm-cancel-btn').innerText = t.cCan;
+            renderTasks();
+        }
+
+        function initThemes() {
+            const grid = document.getElementById('themeGrid');
+            themes.forEach(t => {
+                const dot = document.createElement('div');
+                dot.className = 'theme-dot';
+                dot.style.background = t.bg;
+                dot.onclick = () => {
+                    document.body.style.background = t.bg;
+                    document.documentElement.style.setProperty('--accent', t.accent);
+                    document.getElementById('brand-name').style.color = t.accent;
+                };
+                grid.appendChild(dot);
+            });
+        }
+
+        function updateStats() {
+            const done = tasks.filter(t => t.completed).length;
+            const perc = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+            document.getElementById('completion-rate').innerText = perc + '%';
+        }
+
+        function toggleMenu() { document.getElementById('settingsMenu').classList.toggle('show'); }
+        function openModal() { document.getElementById('confirmModal').classList.add('show'); toggleMenu(); }
+        function closeModal() { document.getElementById('confirmModal').classList.remove('show'); }
+
+        function playBell() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.frequency.value = 800; gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 20; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = '50%'; c.style.top = '50%';
+                c.style.width = Math.random() * 8 + 4 + 'px';
+                c.style.height = c.style.width;
+                c.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                document.body.appendChild(c);
+                const x = (Math.random() - 0.5) * window.innerWidth;
+                const y = (Math.random() - 0.5) * window.innerHeight;
+                c.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${x}px,${y}px) scale(0)`, opacity: 0 }], { duration: 1000 }).onfinish = () => c.remove();
+            }
+        }
+
+        // تشغيل أولي
+        initThemes();
+        renderTasks();
+        document.getElementById('taskInput').onkeypress = (e) => e.key === 'Enter' && addTask();
     </script>
 </body>
 </html>
