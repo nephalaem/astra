@@ -255,9 +255,19 @@
         function applyTheme() {
             const theme = JSON.parse(localStorage.getItem('astra_theme_data'));
             if (theme) {
+                // تحديث اللون الأساسي في CSS variables
                 document.documentElement.style.setProperty('--primary-color', theme.accent);
-                const bgValue = `radial-gradient(circle at top right, ${theme.accent}44, #000 70%)`;
-                document.documentElement.style.setProperty('--bg-gradient', bgValue);
+                
+                // تحديث الخلفية بناءً على الثيم المختار
+                if (theme.background) {
+                    document.body.style.background = theme.background;
+                } else {
+                    const bgValue = `radial-gradient(circle at top right, ${theme.accent}44, #000 70%)`;
+                    document.documentElement.style.setProperty('--bg-gradient', bgValue);
+                    document.body.style.background = bgValue;
+                }
+                
+                // تحديث تأثير الظل لزر الإضافة
                 const btn = document.getElementById('add-btn');
                 if(btn) btn.style.boxShadow = `0 10px 25px -5px ${theme.accent}66`;
             }
