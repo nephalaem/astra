@@ -181,6 +181,14 @@
             }
         }
 
+        // دالة مخصصة للتأكد من تطبيق الثيم المحفوظ عند التحميل
+        function applySavedTheme() {
+            const savedColor = localStorage.getItem('astra_theme');
+            if (savedColor) {
+                updateTheme(savedColor);
+            }
+        }
+
         function renderTasks() {
             ['do', 'schedule', 'delegate', 'delete'].forEach(id => {
                 const el = document.getElementById('list-' + id);
@@ -242,8 +250,7 @@
 
         // عند تحميل الصفحة، نطبق الثيم والمهام
         window.addEventListener('load', () => {
-            const savedTheme = localStorage.getItem('astra_theme') || '#6366f1';
-            updateTheme(savedTheme); 
+            applySavedTheme(); // استدعاء الثيم المحفوظ فوراً
             renderTasks();
         });
 
