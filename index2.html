@@ -28,32 +28,49 @@
         /* تأثير الزجاج الشفاف المنسجم */
         .glass-card { 
             background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(20px) saturate(180%); 
+            backdrop-filter: blur(25px) saturate(180%); 
             border: 1px solid rgba(255, 255, 255, 0.08); 
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         }
 
         .task-item {
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .task-item:hover {
-            background: rgba(255, 255, 255, 0.06);
-            transform: translateX(-5px);
+            background: rgba(255, 255, 255, 0.07);
+            transform: scale(1.02);
         }
 
         .svg-primary { stroke: var(--primary-color) !important; }
         
         #add-btn {
             background-color: var(--primary-color) !important;
+            box-shadow: 0 8px 20px -5px var(--primary-color);
             transition: all 0.3s ease;
         }
 
-        /* حدود ملونة للمصفوفة للحفاظ على الوظيفة البصرية */
-        .box-do { border-right: 4px solid #f87171 !important; }
-        .box-schedule { border-right: 4px solid #60a5fa !important; }
-        .box-delegate { border-right: 4px solid #fb923c !important; }
-        .box-delete { border-right: 4px solid #9ca3af !important; }
+        /* مؤشر إنجاز بصري مشابه للرئيسية */
+        .stat-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 20px var(--primary-color);
+            transition: all 0.5s ease;
+        }
+
+        /* حدود ملونة للمصفوفة */
+        .box-do { border-top: 3px solid #f87171 !important; }
+        .box-schedule { border-top: 3px solid #60a5fa !important; }
+        .box-delegate { border-top: 3px solid #fb923c !important; }
+        .box-delete { border-top: 3px solid #9ca3af !important; }
 
         .title-do { color: #f87171; }
         .title-schedule { color: #60a5fa; }
@@ -68,94 +85,95 @@
             font-weight: bold;
         }
 
-        select option { background: #1e1b4b; color: white; }
+        select option { background: #000; color: white; }
     </style>
     
     <script>
-        // مزامنة الثيم فورياً قبل الرندر لضمان التناسق
         (function() {
             const savedTheme = JSON.parse(localStorage.getItem('astra_theme_data'));
             if (savedTheme) {
                 document.documentElement.style.setProperty('--primary-color', savedTheme.accent);
-                const bgValue = `radial-gradient(circle at top right, ${savedTheme.accent}33, #000)`;
+                const bgValue = `radial-gradient(circle at top right, ${savedTheme.accent}44, #000 70%)`;
                 document.documentElement.style.setProperty('--bg-gradient', bgValue);
             }
         })();
     </script>
 </head>
-<body class="p-6">
+<body class="p-4 md:p-8">
 
-    <header class="max-w-4xl mx-auto flex justify-between items-center mb-10">
-        <div class="flex items-center gap-4">
-            <a href="index.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all">
-                <svg class="w-6 h-6 svg-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <header class="max-w-5xl mx-auto flex justify-between items-center mb-12">
+        <div class="flex items-center gap-6">
+            <a href="index.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group">
+                <svg class="w-6 h-6 svg-primary group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
             </a>
-            <h1 class="text-3xl font-black" style="color: var(--primary-color);">ASTRA MATRIX</h1>
+            <h1 class="text-3xl font-black tracking-tighter" style="color: var(--primary-color);">ASTRA MATRIX</h1>
         </div>
         
-        <div class="flex items-center gap-6">
-            <div class="text-right">
-                <p class="text-[10px] opacity-40 tracking-widest uppercase">معدل الإنجاز</p>
-                <span id="comp-rate" class="text-3xl font-bold">0%</span>
+        <div class="flex items-center gap-4 glass-card py-2 px-6 rounded-3xl">
+            <div class="stat-circle" id="stat-glow">
+                <span id="comp-rate" class="text-xl font-bold">0%</span>
+            </div>
+            <div class="text-right hidden sm:block">
+                <p class="text-[10px] opacity-40 tracking-widest uppercase font-bold">مستوى التركيز</p>
+                <p class="text-xs">جلسة نشطة</p>
             </div>
         </div>
     </header>
 
     <div id="view-matrix" class="max-w-5xl mx-auto pb-24">
         <!-- إضافة المهمة -->
-        <div class="glass-card p-2 rounded-3xl mb-10 flex flex-col md:flex-row gap-2">
-            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" placeholder="أضف مهمة للمصفوفة...">
-            <div class="flex gap-2">
-                <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-xl text-sm outline-none cursor-pointer text-white backdrop-blur-lg">
+        <div class="glass-card p-2 rounded-[2rem] mb-10 flex flex-col md:flex-row gap-2">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" placeholder="أضف مهمة جديدة للمصفوفة...">
+            <div class="flex gap-2 p-1">
+                <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-2xl text-sm outline-none cursor-pointer text-white backdrop-blur-lg">
                     <option value="do">🔴 عاجل وهام</option>
                     <option value="schedule">🔵 خطط لها</option>
                     <option value="delegate">🟠 فوّضها</option>
                     <option value="delete">⚪ احذفها</option>
                 </select>
-                <button onclick="addTask()" class="px-10 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all" id="add-btn">إضافة</button>
+                <button onclick="addTask()" class="px-10 py-4 rounded-2xl font-bold text-white shadow-lg active:scale-95 transition-all" id="add-btn">إضافة</button>
             </div>
         </div>
 
-        <!-- شبكة المصفوفة -->
+        <!-- شبكة المصفوفة المنسجمة -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="glass-card p-6 rounded-[32px] box-do">
+            <div class="glass-card p-6 rounded-[2.5rem] box-do relative overflow-hidden">
                 <h3 class="title-do font-bold mb-6 flex justify-between items-center">
-                    <span>افعل الآن</span>
-                    <span class="status-badge border border-red-500/30 text-red-400">عاجل / هام</span>
+                    <span class="tracking-widest uppercase text-sm">Do Now</span>
+                    <span class="status-badge border border-red-500/20">عاجل / هام</span>
                 </h3>
-                <div id="list-do" class="space-y-3 min-h-[120px]"></div>
+                <div id="list-do" class="space-y-3 min-h-[140px]"></div>
             </div>
 
-            <div class="glass-card p-6 rounded-[32px] box-schedule">
+            <div class="glass-card p-6 rounded-[2.5rem] box-schedule relative overflow-hidden">
                 <h3 class="title-schedule font-bold mb-6 flex justify-between items-center">
-                    <span>خطط لها</span>
-                    <span class="status-badge border border-blue-500/30 text-blue-400">غير عاجل / هام</span>
+                    <span class="tracking-widest uppercase text-sm">Schedule</span>
+                    <span class="status-badge border border-blue-500/20">غير عاجل / هام</span>
                 </h3>
-                <div id="list-schedule" class="space-y-3 min-h-[120px]"></div>
+                <div id="list-schedule" class="space-y-3 min-h-[140px]"></div>
             </div>
 
-            <div class="glass-card p-6 rounded-[32px] box-delegate">
+            <div class="glass-card p-6 rounded-[2.5rem] box-delegate relative overflow-hidden">
                 <h3 class="title-delegate font-bold mb-6 flex justify-between items-center">
-                    <span>فوّضها</span>
-                    <span class="status-badge border border-orange-500/30 text-orange-400">عاجل / غير هام</span>
+                    <span class="tracking-widest uppercase text-sm">Delegate</span>
+                    <span class="status-badge border border-orange-500/20">عاجل / غير هام</span>
                 </h3>
-                <div id="list-delegate" class="space-y-3 min-h-[120px]"></div>
+                <div id="list-delegate" class="space-y-3 min-h-[140px]"></div>
             </div>
 
-            <div class="glass-card p-6 rounded-[32px] box-delete">
+            <div class="glass-card p-6 rounded-[2.5rem] box-delete relative overflow-hidden">
                 <h3 class="title-delete font-bold mb-6 flex justify-between items-center">
-                    <span>احذفها</span>
-                    <span class="status-badge border border-gray-500/30 text-gray-400">غير عاجل / غير هام</span>
+                    <span class="tracking-widest uppercase text-sm">Eliminate</span>
+                    <span class="status-badge border border-gray-500/20">غير عاجل / غير هام</span>
                 </h3>
-                <div id="list-delete" class="space-y-3 min-h-[120px]"></div>
+                <div id="list-delete" class="space-y-3 min-h-[140px]"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // تغيير المفتاح ليكون خاص بالمصفوفة فقط لمنع الخلط مع الواجهة الرئيسية
         const MATRIX_KEY = 'astra_matrix_tasks';
         let tasks = JSON.parse(localStorage.getItem(MATRIX_KEY)) || [];
         
@@ -163,10 +181,13 @@
             const theme = JSON.parse(localStorage.getItem('astra_theme_data'));
             if (theme) {
                 document.documentElement.style.setProperty('--primary-color', theme.accent);
-                const bgValue = `radial-gradient(circle at top right, ${theme.accent}33, #000)`;
+                const bgValue = `radial-gradient(circle at top right, ${theme.accent}44, #000 70%)`;
                 document.documentElement.style.setProperty('--bg-gradient', bgValue);
                 const btn = document.getElementById('add-btn');
-                if(btn) btn.style.boxShadow = `0 10px 20px -5px ${theme.accent}66`;
+                if(btn) btn.style.boxShadow = `0 10px 25px -5px ${theme.accent}`;
+                
+                const glow = document.getElementById('stat-glow');
+                if(glow) glow.style.borderColor = theme.accent;
             }
         }
 
@@ -182,13 +203,15 @@
                 
                 if (list) {
                     const item = document.createElement('div');
-                    item.className = `task-item glass-card p-4 rounded-2xl flex items-center justify-between ${t.completed ? 'opacity-30' : ''}`;
+                    item.className = `task-item p-4 rounded-2xl flex items-center justify-between ${t.completed ? 'opacity-30 grayscale' : ''}`;
                     item.innerHTML = `
                         <div class="flex items-center gap-4">
-                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="w-5 h-5 cursor-pointer accent-indigo-500">
-                            <span class="text-sm ${t.completed ? 'line-through opacity-50' : ''}">${t.text}</span>
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="w-6 h-6 rounded-lg cursor-pointer accent-indigo-500 bg-white/5 border-white/10">
+                            <span class="text-sm font-medium ${t.completed ? 'line-through' : ''}">${t.text}</span>
                         </div>
-                        <button onclick="deleteTask(${i})" class="text-white/20 hover:text-red-500 transition-colors">✕</button>
+                        <button onclick="deleteTask(${i})" class="text-white/10 hover:text-red-500 transition-colors p-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                     `;
                     list.appendChild(item);
                 }
@@ -214,6 +237,12 @@
             const done = tasks.filter(t => t.completed).length;
             const rate = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
             document.getElementById('comp-rate').innerText = rate + '%';
+            
+            const glow = document.getElementById('stat-glow');
+            if(glow) {
+                glow.style.boxShadow = `0 0 ${10 + (rate/4)}px var(--primary-color)`;
+                glow.style.background = `rgba(255,255,255,${0.05 + (rate/500)})`;
+            }
         }
 
         window.addEventListener('load', () => {
@@ -228,6 +257,8 @@
                 renderTasks();
             }
         });
+
+        document.getElementById('taskInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
     </script>
 </body>
 </html>
