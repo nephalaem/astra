@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astra Matrix - Fixed</title>
+    <title>Astra Matrix - Unified Theme</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        :root { --primary-color: #6366f1; }
+        :root {
+            --primary-color: #6366f1; 
+        }
+
         body { 
             background: #000; 
             background-image: radial-gradient(circle at top right, #1a1a2e, #000);
@@ -16,189 +19,315 @@
             min-height: 100vh; 
             font-family: 'Tajawal', sans-serif;
             color: white;
-            margin: 0; padding: 20px;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
         }
+        
         .glass-card { 
             background: rgba(255, 255, 255, 0.05); 
             backdrop-filter: blur(25px); 
             border: 1px solid rgba(255, 255, 255, 0.1); 
         }
-        .theme-circle {
-            width: 30px; height: 30px; border-radius: 50%;
-            cursor: pointer; transition: all 0.2s;
-            border: 2px solid rgba(255,255,255,0.2);
+
+        /* تنسيقات الثيم الموحد */
+        .text-primary { color: var(--primary-color) !important; }
+        .bg-primary { background-color: var(--primary-color) !important; }
+        .border-primary { border-color: var(--primary-color) !important; }
+        .svg-primary { stroke: var(--primary-color) !important; }
+        
+        /* زر الإضافة بتوهج ديناميكي */
+        #add-btn {
+            background-color: var(--primary-color) !important;
+            box-shadow: 0 8px 20px -6px var(--primary-color);
+            transition: all 0.3s ease;
         }
-        .theme-circle.active { border: 3px solid white; transform: scale(1.2); }
-        
-        .dynamic-color { transition: color 0.3s, background-color 0.3s, border-color 0.3s, box-shadow 0.3s; }
-        
+        #add-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        /* تنسيق دوائر الثيم (الـ 15 ثيم) */
+        .theme-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .theme-circle:hover { transform: scale(1.15); }
+        .theme-circle.active { 
+            border: 3px solid white; 
+            transform: scale(1.2); 
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        /* تنسيق المصفوفة */
+        .matrix-quad {
+            border-top: 3px solid var(--primary-color);
+            transition: border-color 0.4s ease;
+        }
+
+        .task-item {
+            transition: all 0.3s ease;
+            border-right: 4px solid var(--primary-color);
+        }
+
+        /* نافذة الإعدادات */
         #settings-modal {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.8); z-index: 100;
-            backdrop-filter: blur(10px); align-items: center; justify-content: center;
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            align-items: center;
+            justify-content: center;
         }
     </style>
+    
+    <script>
+        // الحقن الفوري للثيم لمنع الوميض الأبيض أو الأزرق عند التحميل
+        const initialColor = localStorage.getItem('astra_global_theme') || '#6366f1';
+        document.documentElement.style.setProperty('--primary-color', initialColor);
+    </script>
 </head>
 <body>
 
+    <!-- Header -->
     <header class="max-w-4xl mx-auto flex justify-between items-center mb-10">
         <div class="flex items-center gap-5">
             <button onclick="toggleSettings()" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group">
-                <svg id="settings-icon" class="w-7 h-7 dynamic-color" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-7 h-7 svg-primary group-rotate-90 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
             </button>
-            <h1 id="main-logo" class="text-4xl font-black tracking-tighter italic dynamic-color">ASTRA</h1>
+            <h1 class="text-4xl font-black tracking-tighter text-primary italic">ASTRA</h1>
         </div>
+        
         <div class="text-right">
-            <p class="text-[10px] opacity-40 uppercase tracking-widest">نسبة الإنجاز</p>
+            <p class="text-[10px] opacity-40 uppercase tracking-widest mb-1">نسبة الإنجاز</p>
             <div class="flex items-center gap-3">
                 <span id="comp-rate" class="text-3xl font-bold">0%</span>
                 <div class="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="h-full dynamic-color" style="width: 0%"></div>
+                    <div id="progress-bar" class="h-full bg-primary transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
         </div>
     </header>
 
+    <!-- Settings Modal -->
     <div id="settings-modal" onclick="toggleSettings()">
-        <div class="glass-card p-8 rounded-[40px] max-w-sm w-full m-4" onclick="event.stopPropagation()">
-            <h2 class="text-xl font-bold mb-6 text-center">اختر لون الثيم</h2>
-            <div class="grid grid-cols-5 gap-4 mb-8" id="theme-grid"></div>
-            <button onclick="clearTasks()" class="w-full p-4 bg-red-500/10 text-red-400 rounded-2xl text-sm font-bold hover:bg-red-500/20 transition-all">مسح البيانات</button>
+        <div class="glass-card p-8 rounded-[40px] max-w-sm w-full m-4 shadow-2xl" onclick="event.stopPropagation()">
+            <h2 class="text-xl font-bold mb-8 text-center">اختر السمة (15 ثيم)</h2>
+            <div class="grid grid-cols-5 gap-5 mb-10 justify-items-center" id="theme-grid">
+                <!-- الألوان تولد برمجياً -->
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-4 glass-card rounded-2xl">
+                    <span class="text-sm opacity-70">لغة التطبيق</span>
+                    <span class="text-primary font-bold">العربية</span>
+                </div>
+                <button onclick="clearTasks()" class="w-full p-4 bg-red-500/10 text-red-400 rounded-2xl text-sm font-bold hover:bg-red-500/20 transition-all">
+                    مسح جميع المهام
+                </button>
+            </div>
         </div>
     </div>
 
+    <!-- Main Content -->
     <main class="max-w-4xl mx-auto px-2">
+        <!-- Input Area -->
         <div class="glass-card p-3 rounded-[28px] mb-10 flex flex-col sm:flex-row gap-3">
-            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" placeholder="أضف مهمة جديدة...">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" placeholder="ما هي المهمة التالية؟">
             <div class="flex gap-2">
-                <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-2xl text-sm outline-none text-white">
-                    <option value="do" class="bg-gray-900">عاجل وهام</option>
-                    <option value="schedule" class="bg-gray-900">خطط لها</option>
-                    <option value="delegate" class="bg-gray-900">فوّضها</option>
-                    <option value="delete" class="bg-gray-900">احذفها</option>
+                <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-2xl text-sm outline-none cursor-pointer hover:bg-white/10 transition-colors">
+                    <option value="do">عاجل وهام</option>
+                    <option value="schedule">خطط لها</option>
+                    <option value="delegate">فوّضها</option>
+                    <option value="delete">احذفها</option>
                 </select>
-                <button onclick="addTask()" id="add-btn" class="px-10 py-4 rounded-2xl font-bold text-white dynamic-color">إضافة</button>
+                <button onclick="addTask()" id="add-btn" class="px-10 py-4 rounded-2xl font-bold text-white text-lg">إضافة</button>
             </div>
         </div>
 
+        <!-- Matrix Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="glass-card p-6 rounded-[35px] border-t-4 dynamic-border" id="quad-do" data-type="do">
-                <h3 class="font-bold mb-4 text-sm flex items-center gap-2 dynamic-text">افعل الآن</h3>
-                <div id="list-do" class="space-y-3"></div>
+            <div class="glass-card p-6 rounded-[35px] matrix-quad" id="quad-do">
+                <h3 class="text-primary font-bold mb-5 text-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    افعل الآن (عاجل وهام)
+                </h3>
+                <div id="list-do" class="space-y-3 min-h-[120px]"></div>
             </div>
-            <div class="glass-card p-6 rounded-[35px] border-t-4 dynamic-border" id="quad-schedule" data-type="schedule">
-                <h3 class="font-bold mb-4 text-sm flex items-center gap-2 dynamic-text">خطط لها</h3>
-                <div id="list-schedule" class="space-y-3"></div>
+
+            <div class="glass-card p-6 rounded-[35px] matrix-quad" id="quad-schedule">
+                <h3 class="text-primary font-bold mb-5 text-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                    خطط لها (غير عاجل)
+                </h3>
+                <div id="list-schedule" class="space-y-3 min-h-[120px]"></div>
             </div>
-            <div class="glass-card p-6 rounded-[35px] border-t-4 dynamic-border" id="quad-delegate" data-type="delegate">
-                <h3 class="font-bold mb-4 text-sm flex items-center gap-2 dynamic-text">فوّضها</h3>
-                <div id="list-delegate" class="space-y-3"></div>
+
+            <div class="glass-card p-6 rounded-[35px] matrix-quad" id="quad-delegate">
+                <h3 class="text-primary font-bold mb-5 text-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                    فوّضها (غير هام)
+                </h3>
+                <div id="list-delegate" class="space-y-3 min-h-[120px]"></div>
             </div>
-            <div class="glass-card p-6 rounded-[35px] border-t-4 dynamic-border" id="quad-delete" data-type="delete">
-                <h3 class="font-bold mb-4 text-sm flex items-center gap-2 dynamic-text">احذفها</h3>
-                <div id="list-delete" class="space-y-3"></div>
+
+            <div class="glass-card p-6 rounded-[35px] matrix-quad" id="quad-delete">
+                <h3 class="text-primary font-bold mb-5 text-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+                    احذفها (غير هام/عاجل)
+                </h3>
+                <div id="list-delete" class="space-y-3 min-h-[120px]"></div>
             </div>
         </div>
     </main>
 
     <script>
-        const themeColors = [
+        const colors = [
             '#ec4899', '#ef4444', '#22c55e', '#ffffff', '#3b82f6',
             '#f472b6', '#84cc16', '#06b6d4', '#6366f1', '#eab308',
             '#60a5fa', '#a855f7', '#fb7185', '#00f2ff', '#10b981'
         ];
 
         let tasks = JSON.parse(localStorage.getItem('astra_tasks')) || [];
-        let currentTheme = localStorage.getItem('astra_theme') || '#6366f1';
 
-        function initThemes() {
-            const grid = document.getElementById('theme-grid');
-            themeColors.forEach(color => {
-                const div = document.createElement('div');
-                div.className = `theme-circle ${color === currentTheme ? 'active' : ''}`;
-                div.style.backgroundColor = color;
-                div.onclick = () => applyTheme(color);
-                grid.appendChild(div);
-            });
-            applyTheme(currentTheme);
-        }
+        // إعداد شبكة الثيمات
+        const themeGrid = document.getElementById('theme-grid');
+        colors.forEach(color => {
+            const dot = document.createElement('div');
+            dot.className = 'theme-circle';
+            dot.style.backgroundColor = color;
+            dot.onclick = () => applyTheme(color);
+            dot.setAttribute('data-color', color);
+            themeGrid.appendChild(dot);
+        });
 
         function applyTheme(color) {
-            currentTheme = color;
-            localStorage.setItem('astra_theme', color);
+            // تطبيق اللون على المتغير الجذري CSS
+            document.documentElement.style.setProperty('--primary-color', color);
+            // حفظ الثيم في التخزين المحلي
+            localStorage.setItem('astra_global_theme', color);
             
-            document.querySelectorAll('.theme-circle').forEach(c => {
-                c.classList.toggle('active', c.style.backgroundColor === color || 
-                (color === '#ffffff' && c.style.backgroundColor === 'rgb(255, 255, 255)'));
+            // تحديث حالة الدائرة النشطة بصرياً
+            document.querySelectorAll('.theme-circle').forEach(d => {
+                if(d.getAttribute('data-color') === color) {
+                    d.classList.add('active');
+                } else {
+                    d.classList.remove('active');
+                }
             });
 
-            document.getElementById('main-logo').style.color = color;
-            document.getElementById('settings-icon').style.stroke = color;
-            document.getElementById('add-btn').style.backgroundColor = color;
-            document.getElementById('add-btn').style.boxShadow = `0 10px 20px -5px ${color}66`;
-            document.getElementById('progress-bar').style.backgroundColor = color;
-
-            document.querySelectorAll('.dynamic-text').forEach(el => el.style.color = color);
-            document.querySelectorAll('.dynamic-border').forEach(el => el.style.borderColor = color);
+            // تحديث الألوان الثابتة يدوياً لضمان الفورية
+            const addBtn = document.getElementById('add-btn');
+            const progressBar = document.getElementById('progress-bar');
+            if (addBtn) addBtn.style.backgroundColor = color;
+            if (progressBar) progressBar.style.backgroundColor = color;
             
+            // إعادة رندرة المهام لتحديث ألوان الحدود
             renderTasks();
         }
 
-        function updateStats() {
-            const total = tasks.length;
-            const completed = tasks.filter(t => t.completed).length;
-            const rate = total === 0 ? 0 : Math.round((completed / total) * 100);
-            
-            document.getElementById('comp-rate').innerText = rate + '%';
-            document.getElementById('progress-bar').style.width = rate + '%';
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            const isVisible = modal.style.display === 'flex';
+            modal.style.display = isVisible ? 'none' : 'flex';
         }
 
         function renderTasks() {
-            const lists = { do: 'list-do', schedule: 'list-schedule', delegate: 'list-delegate', delete: 'list-delete' };
-            Object.values(lists).forEach(id => document.getElementById(id).innerHTML = '');
+            const ids = ['do', 'schedule', 'delegate', 'delete'];
+            ids.forEach(id => {
+                const list = document.getElementById('list-' + id);
+                if (list) list.innerHTML = '';
+            });
 
             tasks.forEach((t, i) => {
+                const list = document.getElementById('list-' + t.quadrant);
+                if (!list) return;
+
                 const item = document.createElement('div');
-                item.className = `glass-card p-4 rounded-xl flex items-center justify-between group ${t.completed ? 'opacity-40' : ''}`;
-                item.style.borderRight = `4px solid ${currentTheme}`;
+                item.className = `task-item glass-card p-4 rounded-2xl flex items-center justify-between group ${t.completed ? 'opacity-30 scale-95' : ''}`;
+                // نستخدم المتغير CSS للحدود الجانبية ليكون متناسقاً دائماً مع الثيم
+                item.style.borderRightColor = 'var(--primary-color)';
                 
                 item.innerHTML = `
-                    <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="toggleTask(${i})">
-                        <div class="w-5 h-5 border-2 rounded flex items-center justify-center shrink-0" style="border-color: ${currentTheme}; background: ${t.completed ? currentTheme : 'transparent'}">
-                            ${t.completed ? '<svg class="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>' : ''}
+                    <div class="flex items-center gap-4 flex-1 cursor-pointer" onclick="toggleTask(${i})">
+                        <div class="w-5 h-5 border-2 border-primary rounded-md flex items-center justify-center transition-all ${t.completed ? 'bg-primary' : ''}">
+                            ${t.completed ? '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>' : ''}
                         </div>
-                        <span class="${t.completed ? 'line-through' : ''}">${t.text}</span>
+                        <span class="text-sm font-medium ${t.completed ? 'line-through' : ''}">${t.text}</span>
                     </div>
-                    <button onclick="deleteTask(${i})" class="opacity-0 group-hover:opacity-100 text-red-400 text-xs font-bold px-2">حذف</button>
+                    <button onclick="deleteTask(${i}); event.stopPropagation();" class="text-white/10 hover:text-red-500 transition-colors p-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 `;
-                const listEl = document.getElementById(lists[t.quadrant]);
-                if (listEl) listEl.appendChild(item);
+                list.appendChild(item);
             });
+
             updateStats();
+        }
+
+        function updateStats() {
+            const done = tasks.filter(t => t.completed).length;
+            const rate = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+            const compRateEl = document.getElementById('comp-rate');
+            const progressBar = document.getElementById('progress-bar');
+            
+            if (compRateEl) compRateEl.innerText = rate + '%';
+            if (progressBar) progressBar.style.width = rate + '%';
         }
 
         function addTask() {
             const input = document.getElementById('taskInput');
-            if(!input.value.trim()) return;
-            tasks.unshift({ text: input.value, quadrant: document.getElementById('quadSelect').value, completed: false });
-            input.value = '';
-            save();
+            if (input && input.value.trim()) {
+                tasks.unshift({ 
+                    text: input.value.trim(), 
+                    quadrant: document.getElementById('quadSelect').value, 
+                    completed: false,
+                    timestamp: Date.now()
+                });
+                input.value = '';
+                save();
+            }
         }
 
         function toggleTask(i) { tasks[i].completed = !tasks[i].completed; save(); }
         function deleteTask(i) { tasks.splice(i, 1); save(); }
-        function clearTasks() { if(confirm('هل أنت متأكد من مسح جميع المهام؟')) { tasks = []; save(); } }
-        function save() { localStorage.setItem('astra_tasks', JSON.stringify(tasks)); renderTasks(); }
-        function toggleSettings() { 
-            const m = document.getElementById('settings-modal');
-            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+        
+        function clearTasks() { 
+            if(confirm('هل تريد حقاً مسح جميع المهام؟')) { 
+                tasks = []; 
+                save(); 
+                toggleSettings(); 
+            } 
         }
 
-        window.onload = initThemes;
-        document.getElementById('taskInput').onkeypress = (e) => e.key === 'Enter' && addTask();
+        function save() { 
+            localStorage.setItem('astra_tasks', JSON.stringify(tasks)); 
+            renderTasks(); 
+        }
+
+        // عند التشغيل
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('astra_global_theme') || '#6366f1';
+            applyTheme(savedTheme);
+            renderTasks();
+            
+            // إضافة ميزة إضافة المهمة بالضغط على Enter
+            const taskInput = document.getElementById('taskInput');
+            if (taskInput) {
+                taskInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') addTask();
+                });
+            }
+        };
     </script>
 </body>
 </html>
