@@ -2,8 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Astra Matrix - إدارة المهام</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     
@@ -73,7 +73,7 @@
         .title-delete { color: #9ca3af; }
     </style>
     
-    <!-- كود الحقن الفوري للثيم المختار -->
+    <!-- كود الحقن الفوري للثيم المختار لمنع الوميض عند التحميل -->
     <script>
         (function() {
             const savedTheme = localStorage.getItem('astra_theme');
@@ -161,15 +161,20 @@
     </div>
 
     <script>
+        // تحميل المهام عند البداية
         let tasks = JSON.parse(localStorage.getItem('astra_tasks_pure')) || [];
         
+        // وظيفة تحديث وحفظ الثيم
         function updateTheme(color) {
             if(!color) {
                 color = localStorage.getItem('astra_theme') || '#6366f1';
             }
+            // تطبيق اللون على المتغير الأساسي
             document.documentElement.style.setProperty('--primary-color', color);
+            // حفظ اللون في التخزين المحلي لضمان استمراره
             localStorage.setItem('astra_theme', color);
 
+            // تحديث ظل زر الإضافة ليتناسب مع الثيم
             const addBtn = document.getElementById('add-btn');
             if(addBtn) {
                 addBtn.style.boxShadow = `0 10px 20px -5px ${color}66`;
@@ -199,7 +204,10 @@
             });
 
             const done = tasks.filter(t => t.completed).length;
-            document.getElementById('comp-rate').innerText = (tasks.length ? Math.round((done / tasks.length) * 100) : 0) + '%';
+            const compRateEl = document.getElementById('comp-rate');
+            if(compRateEl) {
+                compRateEl.innerText = (tasks.length ? Math.round((done / tasks.length) * 100) : 0) + '%';
+            }
         }
 
         function addTask() {
@@ -232,15 +240,21 @@
             renderTasks();
         }
 
+        // عند تحميل الصفحة، نطبق الثيم والمهام
         window.addEventListener('load', () => {
             const savedTheme = localStorage.getItem('astra_theme') || '#6366f1';
             updateTheme(savedTheme); 
             renderTasks();
         });
 
+        // مزامنة التغييرات في حال كان التطبيق مفتوحاً في تبويبات أخرى
         window.addEventListener('storage', (e) => {
             if (e.key === 'astra_theme') {
                 updateTheme(e.newValue);
+            }
+            if (e.key === 'astra_tasks_pure') {
+                tasks = JSON.parse(e.newValue) || [];
+                renderTasks();
             }
         });
     </script>
