@@ -5,7 +5,7 @@
     <title>Astra Matrix - إدارة المهام</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -17,7 +17,7 @@
             background: var(--bg-gradient); 
             background-attachment: fixed; 
             min-height: 100vh; 
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Tajawal', 'Inter', sans-serif;
             color: white;
             margin: 0;
             padding: 20px;
@@ -25,7 +25,6 @@
             transition: background 0.5s ease;
         }
         
-        /* تأثير الزجاج الشفاف المنسجم */
         .glass-card { 
             background: rgba(255, 255, 255, 0.03); 
             backdrop-filter: blur(25px) saturate(180%); 
@@ -48,11 +47,9 @@
         
         #add-btn {
             background-color: var(--primary-color) !important;
-            box-shadow: 0 8px 20px -5px var(--primary-color);
             transition: all 0.3s ease;
         }
 
-        /* مؤشر إنجاز بصري مشابه للرئيسية */
         .stat-circle {
             width: 60px;
             height: 60px;
@@ -62,11 +59,10 @@
             justify-content: center;
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid var(--primary-color);
-            box-shadow: 0 0 20px var(--primary-color);
             transition: all 0.5s ease;
         }
 
-        /* حدود ملونة للمصفوفة */
+        /* حدود ملونة للمربعات */
         .box-do { border-top: 3px solid #f87171 !important; }
         .box-schedule { border-top: 3px solid #60a5fa !important; }
         .box-delegate { border-top: 3px solid #fb923c !important; }
@@ -86,9 +82,13 @@
         }
 
         select option { background: #000; color: white; }
+        
+        /* إخفاء العناصر قبل تحميل اللغة لمنع الوميض */
+        [data-i18n] { transition: opacity 0.2s; }
     </style>
     
     <script>
+        // إعدادات الثيم واللغة الأولية
         (function() {
             const savedTheme = JSON.parse(localStorage.getItem('astra_theme_data'));
             if (savedTheme) {
@@ -116,8 +116,8 @@
                 <span id="comp-rate" class="text-xl font-bold">0%</span>
             </div>
             <div class="text-right hidden sm:block">
-                <p class="text-[10px] opacity-40 tracking-widest uppercase font-bold">مستوى التركيز</p>
-                <p class="text-xs">جلسة نشطة</p>
+                <p class="text-[10px] opacity-40 tracking-widest uppercase font-bold" data-i18n="rate_label">مستوى الإنجاز</p>
+                <p class="text-xs" data-i18n="session_label">تحليل المصفوفة</p>
             </div>
         </div>
     </header>
@@ -125,48 +125,52 @@
     <div id="view-matrix" class="max-w-5xl mx-auto pb-24">
         <!-- إضافة المهمة -->
         <div class="glass-card p-2 rounded-[2rem] mb-10 flex flex-col md:flex-row gap-2">
-            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" placeholder="أضف مهمة جديدة للمصفوفة...">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" data-i18n-placeholder="input_placeholder">
             <div class="flex gap-2 p-1">
                 <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-2xl text-sm outline-none cursor-pointer text-white backdrop-blur-lg">
-                    <option value="do">🔴 عاجل وهام</option>
-                    <option value="schedule">🔵 خطط لها</option>
-                    <option value="delegate">🟠 فوّضها</option>
-                    <option value="delete">⚪ احذفها</option>
+                    <option value="do" data-i18n="opt_do">🔴 عاجل وهام</option>
+                    <option value="schedule" data-i18n="opt_schedule">🔵 خطط لها</option>
+                    <option value="delegate" data-i18n="opt_delegate">🟠 فوّضها</option>
+                    <option value="delete" data-i18n="opt_delete">⚪ احذفها</option>
                 </select>
-                <button onclick="addTask()" class="px-10 py-4 rounded-2xl font-bold text-white shadow-lg active:scale-95 transition-all" id="add-btn">إضافة</button>
+                <button onclick="addTask()" class="px-10 py-4 rounded-2xl font-bold text-white shadow-lg active:scale-95 transition-all" id="add-btn" data-i18n="add_btn">إضافة</button>
             </div>
         </div>
 
-        <!-- شبكة المصفوفة المنسجمة -->
+        <!-- شبكة المصفوفة -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- الربع الأول -->
             <div class="glass-card p-6 rounded-[2.5rem] box-do relative overflow-hidden">
                 <h3 class="title-do font-bold mb-6 flex justify-between items-center">
-                    <span class="tracking-widest uppercase text-sm">Do Now</span>
-                    <span class="status-badge border border-red-500/20">عاجل / هام</span>
+                    <span class="text-sm" data-i18n="q1_title">افعل الآن</span>
+                    <span class="status-badge border border-red-500/20" data-i18n="q1_badge">عاجل / هام</span>
                 </h3>
                 <div id="list-do" class="space-y-3 min-h-[140px]"></div>
             </div>
 
+            <!-- الربع الثاني -->
             <div class="glass-card p-6 rounded-[2.5rem] box-schedule relative overflow-hidden">
                 <h3 class="title-schedule font-bold mb-6 flex justify-between items-center">
-                    <span class="tracking-widest uppercase text-sm">Schedule</span>
-                    <span class="status-badge border border-blue-500/20">غير عاجل / هام</span>
+                    <span class="text-sm" data-i18n="q2_title">خطط لها</span>
+                    <span class="status-badge border border-blue-500/20" data-i18n="q2_badge">غير عاجل / هام</span>
                 </h3>
                 <div id="list-schedule" class="space-y-3 min-h-[140px]"></div>
             </div>
 
+            <!-- الربع الثالث -->
             <div class="glass-card p-6 rounded-[2.5rem] box-delegate relative overflow-hidden">
                 <h3 class="title-delegate font-bold mb-6 flex justify-between items-center">
-                    <span class="tracking-widest uppercase text-sm">Delegate</span>
-                    <span class="status-badge border border-orange-500/20">عاجل / غير هام</span>
+                    <span class="text-sm" data-i18n="q3_title">فوّضها</span>
+                    <span class="status-badge border border-orange-500/20" data-i18n="q3_badge">عاجل / غير هام</span>
                 </h3>
                 <div id="list-delegate" class="space-y-3 min-h-[140px]"></div>
             </div>
 
+            <!-- الربع الرابع -->
             <div class="glass-card p-6 rounded-[2.5rem] box-delete relative overflow-hidden">
                 <h3 class="title-delete font-bold mb-6 flex justify-between items-center">
-                    <span class="tracking-widest uppercase text-sm">Eliminate</span>
-                    <span class="status-badge border border-gray-500/20">غير عاجل / غير هام</span>
+                    <span class="text-sm" data-i18n="q4_title">احذفها</span>
+                    <span class="status-badge border border-gray-500/20" data-i18n="q4_badge">غير عاجل / غير هام</span>
                 </h3>
                 <div id="list-delete" class="space-y-3 min-h-[140px]"></div>
             </div>
@@ -176,7 +180,67 @@
     <script>
         const MATRIX_KEY = 'astra_matrix_tasks';
         let tasks = JSON.parse(localStorage.getItem(MATRIX_KEY)) || [];
-        
+
+        const translations = {
+            ar: {
+                rate_label: "مستوى الإنجاز",
+                session_label: "تحليل المصفوفة",
+                input_placeholder: "أضف مهمة جديدة للمصفوفة...",
+                add_btn: "إضافة",
+                opt_do: "🔴 عاجل وهام",
+                opt_schedule: "🔵 خطط لها",
+                opt_delegate: "🟠 فوّضها",
+                opt_delete: "⚪ احذفها",
+                q1_title: "افعل الآن",
+                q1_badge: "عاجل / هام",
+                q2_title: "خطط لها",
+                q2_badge: "غير عاجل / هام",
+                q3_title: "فوّضها",
+                q3_badge: "عاجل / غير هام",
+                q4_title: "احذفها",
+                q4_badge: "غير عاجل / غير هام"
+            },
+            en: {
+                rate_label: "Completion Rate",
+                session_label: "Matrix Analysis",
+                input_placeholder: "Add new task to matrix...",
+                add_btn: "Add",
+                opt_do: "🔴 Do Now",
+                opt_schedule: "🔵 Schedule",
+                opt_delegate: "🟠 Delegate",
+                opt_delete: "⚪ Delete",
+                q1_title: "Do Now",
+                q1_badge: "Urgent / Important",
+                q2_title: "Schedule",
+                q2_badge: "Not Urgent / Important",
+                q3_title: "Delegate",
+                q3_badge: "Urgent / Not Important",
+                q4_title: "Delete",
+                q4_badge: "Not Urgent / Not Important"
+            }
+        };
+
+        function updateLanguage() {
+            // جلب اللغة من التخزين المحلي (المحفوظة في index.html)
+            const savedLang = localStorage.getItem('astra_lang') || 'ar';
+            const lang = translations[savedLang] || translations.ar;
+            
+            document.documentElement.lang = savedLang;
+            document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+
+            // ترجمة النصوص
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (lang[key]) el.innerText = lang[key];
+            });
+
+            // ترجمة Placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (lang[key]) el.placeholder = lang[key];
+            });
+        }
+
         function applyTheme() {
             const theme = JSON.parse(localStorage.getItem('astra_theme_data'));
             if (theme) {
@@ -188,6 +252,7 @@
                 
                 const glow = document.getElementById('stat-glow');
                 if(glow) glow.style.borderColor = theme.accent;
+                updateStats(); // تحديث الإضاءة بناءً على اللون الجديد
             }
         }
 
@@ -206,7 +271,7 @@
                     item.className = `task-item p-4 rounded-2xl flex items-center justify-between ${t.completed ? 'opacity-30 grayscale' : ''}`;
                     item.innerHTML = `
                         <div class="flex items-center gap-4">
-                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="w-6 h-6 rounded-lg cursor-pointer accent-indigo-500 bg-white/5 border-white/10">
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="w-6 h-6 rounded-lg cursor-pointer accent-indigo-500">
                             <span class="text-sm font-medium ${t.completed ? 'line-through' : ''}">${t.text}</span>
                         </div>
                         <button onclick="deleteTask(${i})" class="text-white/10 hover:text-red-500 transition-colors p-2">
@@ -240,18 +305,22 @@
             
             const glow = document.getElementById('stat-glow');
             if(glow) {
-                glow.style.boxShadow = `0 0 ${10 + (rate/4)}px var(--primary-color)`;
+                const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+                glow.style.boxShadow = `0 0 ${15 + (rate/4)}px ${primaryColor}`;
                 glow.style.background = `rgba(255,255,255,${0.05 + (rate/500)})`;
             }
         }
 
         window.addEventListener('load', () => {
+            updateLanguage();
             applyTheme();
             renderTasks();
         });
 
+        // الاستماع لتغيير الإعدادات من الصفحة الأخرى
         window.addEventListener('storage', (e) => {
             if (e.key === 'astra_theme_data') applyTheme();
+            if (e.key === 'astra_lang') updateLanguage();
             if (e.key === MATRIX_KEY) {
                 tasks = JSON.parse(e.newValue) || [];
                 renderTasks();
