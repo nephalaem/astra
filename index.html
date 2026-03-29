@@ -8,9 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        :root { --accent: #6366f1; }
+        :root { 
+            --accent: #6366f1; 
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+        }
         body { 
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); 
+            background: var(--bg-gradient); 
             background-attachment: fixed; 
             min-height: 100vh; 
             transition: all 0.5s ease;
@@ -43,20 +46,29 @@
         
         #taskInput { pointer-events: auto !important; position: relative; z-index: 10; }
 
-        /* تعديل لتحسين العرض الكامل */
         .app-container {
             width: 100%;
-            max-width: 100%; /* تمدد كامل */
+            max-width: 100%;
             padding-left: 2rem;
             padding-right: 2rem;
             margin-top: 2rem;
         }
     </style>
+
+    <script>
+        (function() {
+            const savedTheme = JSON.parse(localStorage.getItem('astra_theme_data'));
+            if (savedTheme) {
+                document.documentElement.style.setProperty('--accent', savedTheme.accent);
+                document.documentElement.style.setProperty('--bg-gradient', savedTheme.bg);
+            }
+        })();
+    </script>
 </head>
 <body class="text-white">
 
     <div class="app-container min-h-screen flex flex-col" id="main-container">
-        <!-- Header: ممتد بالكامل -->
+        <!-- Header -->
         <header class="flex justify-between items-center mb-10 shrink-0">
             <div class="flex items-center gap-6 text-start">
                 <div>
@@ -64,7 +76,6 @@
                     <p class="text-xs uppercase opacity-50 tracking-widest" id="rate-label">نسبة الإنجاز</p>
                 </div>
 
-                <!-- أيقونة المصفوفة الجديدة للربط بالملف الثاني -->
                 <a href="index2.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all text-white/20 hover:text-white/60 group" title="مصفوفة أيزنهاور">
                     <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"></path>
@@ -74,7 +85,7 @@
             
             <div class="flex items-center gap-6">
                 <div class="text-end">
-                    <h1 class="text-5xl font-bold tracking-tighter" id="brand-name" style="color: #a5b4fc;">ASTRA</h1>
+                    <h1 class="text-5xl font-bold tracking-tighter" id="brand-name" style="color: var(--accent);">ASTRA</h1>
                     <p class="text-sm opacity-50" id="slogan">نظّم مهامك بذكاء</p>
                 </div>
                 <button id="menuTrigger" onclick="event.stopPropagation(); toggleMenu();" class="p-4 glass-card rounded-2xl hover:bg-white/10 transition-colors relative z-[110] text-2xl">⚙️</button>
@@ -102,7 +113,7 @@
         <!-- Input Section -->
         <div class="flex gap-4 p-2 glass-card rounded-3xl mb-8 items-center shadow-lg shrink-0">
             <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-xl text-white" placeholder="أضف مهمة جديدة..." autocomplete="off">
-            <button onclick="addTask()" id="addBtn" class="bg-indigo-600 hover:bg-indigo-500 px-12 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">إضافة</button>
+            <button onclick="addTask()" id="addBtn" style="background-color: var(--accent);" class="hover:opacity-90 px-12 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">إضافة</button>
         </div>
 
         <!-- Filter Tabs -->
@@ -267,6 +278,17 @@
             renderTasks();
         }
 
+        function applyTheme(t) {
+            document.body.style.background = t.bg;
+            document.documentElement.style.setProperty('--accent', t.accent);
+            document.documentElement.style.setProperty('--bg-gradient', t.bg);
+            document.getElementById('brand-name').style.color = t.accent;
+            document.getElementById('addBtn').style.backgroundColor = t.accent;
+            
+            localStorage.setItem('astra_theme', t.accent); 
+            localStorage.setItem('astra_theme_data', JSON.stringify(t));
+        }
+
         function initThemes() {
             const grid = document.getElementById('themeGrid');
             themes.forEach(t => {
@@ -275,12 +297,13 @@
                 dot.style.background = t.bg;
                 dot.onclick = (e) => {
                     e.stopPropagation();
-                    document.body.style.background = t.bg;
-                    document.documentElement.style.setProperty('--accent', t.accent);
-                    document.getElementById('brand-name').style.color = t.accent;
+                    applyTheme(t);
                 };
                 grid.appendChild(dot);
             });
+
+            const saved = JSON.parse(localStorage.getItem('astra_theme_data'));
+            if (saved) applyTheme(saved);
         }
 
         function updateStats() {
