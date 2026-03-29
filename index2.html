@@ -9,13 +9,12 @@
     
     <style>
         :root {
-            /* القيمة الافتراضية للثيم العام */
             --primary-color: #6366f1; 
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
         }
 
         body { 
-            background: #000; 
-            background-image: radial-gradient(circle at top right, #1a1a2e, #000);
+            background: var(--bg-gradient); 
             background-attachment: fixed; 
             min-height: 100vh; 
             font-family: 'Tajawal', sans-serif;
@@ -23,6 +22,7 @@
             margin: 0;
             padding: 20px;
             overflow-x: hidden;
+            transition: background 0.5s ease;
         }
         
         .glass-card { 
@@ -33,7 +33,6 @@
 
         .task-item {
             transition: all 0.3s ease;
-            border-right: 2px solid transparent;
         }
 
         .task-item:hover {
@@ -41,12 +40,8 @@
             transform: translateX(-5px);
         }
 
-        /* تنسيقات الثيم المختار من الإعدادات */
         .text-primary { color: var(--primary-color) !important; }
         .bg-primary { background-color: var(--primary-color) !important; }
-        .border-primary { border-color: var(--primary-color) !important; }
-        .accent-primary { accent-color: var(--primary-color) !important; }
-        
         .svg-primary { stroke: var(--primary-color) !important; }
         
         #add-btn {
@@ -54,18 +49,11 @@
             transition: all 0.3s ease;
         }
 
-        /* تأثير التوهج للثيم المختار في الإعدادات */
-        .theme-dot.active {
-            outline: 2px solid white;
-            outline-offset: 2px;
-            transform: scale(1.2);
-        }
-
-        /* تنسيقات المصفوفة الأصلية بالألوان المحددة */
-        .box-do { border-right: 3px solid #f87171 !important; }
-        .box-schedule { border-right: 3px solid #60a5fa !important; }
-        .box-delegate { border-right: 3px solid #fb923c !important; }
-        .box-delete { border-right: 3px solid #9ca3af !important; }
+        /* تنسيقات المربعات الأربعة (ألوان ثابتة للمصفوفة) */
+        .box-do { border-right: 4px solid #f87171 !important; }
+        .box-schedule { border-right: 4px solid #60a5fa !important; }
+        .box-delegate { border-right: 4px solid #fb923c !important; }
+        .box-delete { border-right: 4px solid #9ca3af !important; }
 
         .title-do { color: #f87171; }
         .title-schedule { color: #60a5fa; }
@@ -73,12 +61,13 @@
         .title-delete { color: #9ca3af; }
     </style>
     
-    <!-- كود الحقن الفوري للثيم المختار لمنع الوميض عند التحميل -->
     <script>
+        // مزامنة الثيم فورياً قبل رندر الصفحة لضمان نفس مظهر الصفحة الرئيسية
         (function() {
-            const savedTheme = localStorage.getItem('astra_theme');
+            const savedTheme = JSON.parse(localStorage.getItem('astra_theme_data'));
             if (savedTheme) {
-                document.documentElement.style.setProperty('--primary-color', savedTheme);
+                document.documentElement.style.setProperty('--primary-color', savedTheme.accent);
+                document.documentElement.style.setProperty('--bg-gradient', savedTheme.bg);
             }
         })();
     </script>
@@ -89,133 +78,114 @@
     <header class="max-w-4xl mx-auto flex justify-between items-center mb-8">
         <div class="flex items-center gap-4">
             <a href="index.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all">
-                <svg class="w-5 h-5 svg-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 svg-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
             </a>
-            <h1 class="text-2xl font-black text-primary" id="main-logo">ASTRA MATRIX</h1>
+            <h1 class="text-3xl font-black text-primary" id="main-logo" style="color: var(--primary-color);">ASTRA MATRIX</h1>
         </div>
         
         <div class="flex items-center gap-6">
             <div class="text-right">
-                <p class="text-[10px] opacity-40 tracking-widest uppercase">معدل الإنجاز</p>
-                <span id="comp-rate" class="text-2xl font-bold text-white">0%</span>
+                <p class="text-[10px] opacity-40 tracking-widest uppercase">معدل الإنجاز العام</p>
+                <span id="comp-rate" class="text-3xl font-bold text-white">0%</span>
             </div>
         </div>
     </header>
 
     <!-- واجهة المصفوفة -->
     <div id="view-matrix" class="max-w-4xl mx-auto pb-24">
-        <!-- منطقة إضافة المهمة -->
+        <!-- منطقة إضافة المهمة مع اختيار المربع -->
         <div class="glass-card p-3 rounded-2xl mb-8 flex flex-col sm:flex-row gap-2">
-            <input type="text" id="taskInput" class="bg-transparent flex-grow p-3 outline-none text-white placeholder:text-white/20" placeholder="اكتب مهمة جديدة...">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" placeholder="اكتب مهمة جديدة في المصفوفة...">
             <div class="flex gap-2">
-                <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-xl text-xs outline-none cursor-pointer">
-                    <option value="do">عاجل وهام</option>
-                    <option value="schedule">خطط لها</option>
-                    <option value="delegate">فوّضها</option>
-                    <option value="delete">احذفها</option>
+                <select id="quadSelect" class="bg-indigo-900/40 border-none px-4 rounded-xl text-sm outline-none cursor-pointer text-white">
+                    <option value="do">🔴 عاجل وهام</option>
+                    <option value="schedule">🔵 خطط لها</option>
+                    <option value="delegate">🟠 فوّضها</option>
+                    <option value="delete">⚪ احذفها</option>
                 </select>
-                <button onclick="addTask()" class="px-6 py-3 rounded-xl font-bold text-white shadow-lg" id="add-btn">إضافة</button>
+                <button onclick="addTask()" class="px-8 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-transform" id="add-btn">إضافة</button>
             </div>
         </div>
 
-        <!-- المربعات الأربعة بالألوان الأصلية -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- الربع 1 -->
-            <div class="glass-card p-5 rounded-3xl box-do">
-                <h3 class="title-do font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>🔴 افعل الآن (عاجل وهام)</span>
-                    <span class="text-[10px] opacity-20">DO</span>
+        <!-- شبكة المصفوفة -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass-card p-6 rounded-3xl box-do">
+                <h3 class="title-do font-bold mb-4 flex justify-between items-center">
+                    <span>افعل الآن</span>
+                    <span class="text-[10px] opacity-30">URGENT & IMPORTANT</span>
                 </h3>
-                <div id="list-do" class="space-y-2 min-h-[100px]"></div>
+                <div id="list-do" class="space-y-3 min-h-[100px]"></div>
             </div>
 
-            <!-- الربع 2 -->
-            <div class="glass-card p-5 rounded-3xl box-schedule">
-                <h3 class="title-schedule font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>🔵 خطط لها (هام غير عاجل)</span>
-                    <span class="text-[10px] opacity-20">SCHEDULE</span>
+            <div class="glass-card p-6 rounded-3xl box-schedule">
+                <h3 class="title-schedule font-bold mb-4 flex justify-between items-center">
+                    <span>خطط لها</span>
+                    <span class="text-[10px] opacity-30">NOT URGENT & IMPORTANT</span>
                 </h3>
-                <div id="list-schedule" class="space-y-2 min-h-[100px]"></div>
+                <div id="list-schedule" class="space-y-3 min-h-[100px]"></div>
             </div>
 
-            <!-- الربع 3 -->
-            <div class="glass-card p-5 rounded-3xl box-delegate">
-                <h3 class="title-delegate font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>🟠 فوّضها (عاجل غير هام)</span>
-                    <span class="text-[10px] opacity-20">DELEGATE</span>
+            <div class="glass-card p-6 rounded-3xl box-delegate">
+                <h3 class="title-delegate font-bold mb-4 flex justify-between items-center">
+                    <span>فوّضها</span>
+                    <span class="text-[10px] opacity-30">URGENT & NOT IMPORTANT</span>
                 </h3>
-                <div id="list-delegate" class="space-y-2 min-h-[100px]"></div>
+                <div id="list-delegate" class="space-y-3 min-h-[100px]"></div>
             </div>
 
-            <!-- الربع 4 -->
-            <div class="glass-card p-5 rounded-3xl box-delete">
-                <h3 class="title-delete font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>⚪ احذفها (غير هام وغير عاجل)</span>
-                    <span class="text-[10px] opacity-20">DELETE</span>
+            <div class="glass-card p-6 rounded-3xl box-delete">
+                <h3 class="title-delete font-bold mb-4 flex justify-between items-center">
+                    <span>احذفها</span>
+                    <span class="text-[10px] opacity-30">NOT URGENT & NOT IMPORTANT</span>
                 </h3>
-                <div id="list-delete" class="space-y-2 min-h-[100px]"></div>
+                <div id="list-delete" class="space-y-3 min-h-[100px]"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // تحميل المهام عند البداية
-        let tasks = JSON.parse(localStorage.getItem('astra_tasks_pure')) || [];
+        // مزامنة المهام مع الصفحة الرئيسية باستخدام نفس المفتاح
+        let tasks = JSON.parse(localStorage.getItem('astra_tasks')) || [];
         
-        // وظيفة تحديث وحفظ الثيم
-        function updateTheme(color) {
-            if(!color) {
-                color = localStorage.getItem('astra_theme') || '#6366f1';
-            }
-            // تطبيق اللون على المتغير الأساسي
-            document.documentElement.style.setProperty('--primary-color', color);
-            // حفظ اللون في التخزين المحلي لضمان استمراره
-            localStorage.setItem('astra_theme', color);
-
-            // تحديث ظل زر الإضافة ليتناسب مع الثيم
-            const addBtn = document.getElementById('add-btn');
-            if(addBtn) {
-                addBtn.style.boxShadow = `0 10px 20px -5px ${color}66`;
-            }
-        }
-
-        // دالة مخصصة للتأكد من تطبيق الثيم المحفوظ عند التحميل
-        function applySavedTheme() {
-            const savedColor = localStorage.getItem('astra_theme');
-            if (savedColor) {
-                updateTheme(savedColor);
+        function applyTheme() {
+            const theme = JSON.parse(localStorage.getItem('astra_theme_data'));
+            if (theme) {
+                document.documentElement.style.setProperty('--primary-color', theme.accent);
+                document.documentElement.style.setProperty('--bg-gradient', theme.bg);
+                const btn = document.getElementById('add-btn');
+                if(btn) btn.style.boxShadow = `0 10px 20px -5px ${theme.accent}66`;
             }
         }
 
         function renderTasks() {
+            // تفريغ المربعات قبل إعادة الرسم
             ['do', 'schedule', 'delegate', 'delete'].forEach(id => {
                 const el = document.getElementById('list-' + id);
                 if(el) el.innerHTML = '';
             });
 
             tasks.forEach((t, i) => {
-                const list = document.getElementById('list-' + t.quadrant);
+                // وضع المهمة في مربعها الصحيح، أو في 'do' كافتراضي للمهام العامة
+                const quad = t.quadrant || 'do'; 
+                const list = document.getElementById('list-' + quad);
+                
                 if (list) {
                     const item = document.createElement('div');
-                    item.className = `task-item glass-card p-3 rounded-xl flex items-center justify-between ${t.completed ? 'opacity-30' : ''}`;
+                    item.className = `task-item glass-card p-4 rounded-2xl flex items-center justify-between ${t.completed ? 'opacity-30' : ''}`;
                     item.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="w-4 h-4 accent-primary cursor-pointer">
-                            <span class="text-sm ${t.completed ? 'line-through opacity-50' : ''}">${t.text}</span>
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="w-5 h-5 cursor-pointer accent-indigo-500">
+                            <span class="text-base ${t.completed ? 'line-through opacity-50' : ''}">${t.text}</span>
                         </div>
-                        <button onclick="deleteTask(${i})" class="text-white/20 hover:text-red-500 transition-colors text-lg">✕</button>
+                        <button onclick="deleteTask(${i})" class="text-white/20 hover:text-red-500 transition-colors">✕</button>
                     `;
                     list.appendChild(item);
                 }
             });
 
-            const done = tasks.filter(t => t.completed).length;
-            const compRateEl = document.getElementById('comp-rate');
-            if(compRateEl) {
-                compRateEl.innerText = (tasks.length ? Math.round((done / tasks.length) * 100) : 0) + '%';
-            }
+            updateStats();
         }
 
         function addTask() {
@@ -225,8 +195,7 @@
                 tasks.unshift({
                     text: input.value.trim(),
                     quadrant: quad,
-                    completed: false,
-                    id: Date.now()
+                    completed: false
                 });
                 input.value = '';
                 save();
@@ -244,22 +213,25 @@
         }
 
         function save() {
-            localStorage.setItem('astra_tasks_pure', JSON.stringify(tasks));
+            localStorage.setItem('astra_tasks', JSON.stringify(tasks));
             renderTasks();
         }
 
-        // عند تحميل الصفحة، نطبق الثيم والمهام
+        function updateStats() {
+            const done = tasks.filter(t => t.completed).length;
+            const rate = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+            document.getElementById('comp-rate').innerText = rate + '%';
+        }
+
         window.addEventListener('load', () => {
-            applySavedTheme(); // استدعاء الثيم المحفوظ فوراً
+            applyTheme();
             renderTasks();
         });
 
-        // مزامنة التغييرات في حال كان التطبيق مفتوحاً في تبويبات أخرى
+        // المزامنة اللحظية عند تغيير البيانات من تبويب آخر أو الصفحة الرئيسية
         window.addEventListener('storage', (e) => {
-            if (e.key === 'astra_theme') {
-                updateTheme(e.newValue);
-            }
-            if (e.key === 'astra_tasks_pure') {
+            if (e.key === 'astra_theme_data') applyTheme();
+            if (e.key === 'astra_tasks') {
                 tasks = JSON.parse(e.newValue) || [];
                 renderTasks();
             }
