@@ -253,12 +253,11 @@
         }
 
         function applyTheme() {
-            const theme = JSON.parse(localStorage.getItem('astra_theme_data'));
-            if (theme) {
-                // تحديث اللون الأساسي في CSS variables
+            const themeData = localStorage.getItem('astra_theme_data');
+            if (themeData) {
+                const theme = JSON.parse(themeData);
                 document.documentElement.style.setProperty('--primary-color', theme.accent);
                 
-                // تحديث الخلفية بناءً على الثيم المختار
                 if (theme.background) {
                     document.body.style.background = theme.background;
                 } else {
@@ -267,7 +266,6 @@
                     document.body.style.background = bgValue;
                 }
                 
-                // تحديث تأثير الظل لزر الإضافة
                 const btn = document.getElementById('add-btn');
                 if(btn) btn.style.boxShadow = `0 10px 25px -5px ${theme.accent}66`;
             }
@@ -294,7 +292,7 @@
                         <div class="flex items-center gap-4 flex-1">
                             <div class="relative flex items-center justify-center h-6 w-6">
                                 <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" 
-                                    class="w-6 h-6 rounded-lg cursor-pointer accent-indigo-500 appearance-none border-2 border-white/20 checked:bg-indigo-500 checked:border-transparent transition-all">
+                                    class="w-6 h-6 rounded-lg cursor-pointer appearance-none border-2 border-white/20 checked:bg-indigo-500 checked:border-transparent transition-all">
                                 ${t.completed ? '<svg class="absolute w-4 h-4 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
                             </div>
                             <span class="text-sm font-medium ${t.completed ? 'line-through opacity-50' : ''}">${t.text}</span>
@@ -331,12 +329,14 @@
 
         function deleteWithAnimation(btn, i) {
             const item = btn.closest('.task-item');
-            item.style.transform = 'scale(0.8) rotate(5deg)';
-            item.style.opacity = '0';
-            setTimeout(() => {
-                tasks.splice(i, 1);
-                save();
-            }, 300);
+            if(item) {
+                item.style.transform = 'scale(0.8) rotate(5deg)';
+                item.style.opacity = '0';
+                setTimeout(() => {
+                    tasks.splice(i, 1);
+                    save();
+                }, 300);
+            }
         }
 
         function save() { 
@@ -349,34 +349,38 @@
             const rate = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
             
             const rateEl = document.getElementById('comp-rate');
-            let startValue = parseInt(rateEl.innerText) || 0;
+            if(!rateEl) return;
             
-            // Animation for the number
+            let startValue = parseInt(rateEl.innerText) || 0;
             let current = startValue;
             const step = rate > startValue ? 1 : -1;
-            const interval = setInterval(() => {
-                if (current === rate) {
-                    clearInterval(interval);
-                } else {
-                    current += step;
-                    rateEl.innerText = current + '%';
-                }
-            }, 10);
+            
+            if(current !== rate) {
+                const interval = setInterval(() => {
+                    if (current === rate) {
+                        clearInterval(interval);
+                    } else {
+                        current += step;
+                        rateEl.innerText = current + '%';
+                    }
+                }, 10);
+            } else {
+                rateEl.innerText = rate + '%';
+            }
             
             const glow = document.getElementById('stat-glow');
-            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
             if(glow) {
                 glow.style.boxShadow = `0 0 ${15 + (rate/4)}px ${primaryColor}`;
                 glow.style.borderColor = rate === 100 ? '#4ade80' : primaryColor;
             }
         }
 
-        // Event Listeners
-        window.addEventListener('load', () => {
+        window.onload = () => {
             updateLanguage();
             applyTheme();
             renderTasks();
-        });
+        };
 
         document.getElementById('taskInput').addEventListener('keypress', (e) => { 
             if (e.key === 'Enter') addTask(); 
