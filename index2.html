@@ -42,8 +42,6 @@
             transform: translateX(-5px);
         }
 
-        .text-primary { color: var(--primary-color) !important; }
-        .bg-primary { background-color: var(--primary-color) !important; }
         .svg-primary { stroke: var(--primary-color) !important; }
         
         #add-btn {
@@ -61,6 +59,14 @@
         .title-schedule { color: #60a5fa; }
         .title-delegate { color: #fb923c; }
         .title-delete { color: #9ca3af; }
+
+        .status-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            font-weight: bold;
+        }
 
         select option { background: #1e1b4b; color: white; }
     </style>
@@ -117,7 +123,7 @@
             <div class="glass-card p-6 rounded-[32px] box-do">
                 <h3 class="title-do font-bold mb-6 flex justify-between items-center">
                     <span>افعل الآن</span>
-                    <span class="text-[9px] opacity-30">عاجل / هام</span>
+                    <span class="status-badge border border-red-500/30 text-red-400">عاجل / هام</span>
                 </h3>
                 <div id="list-do" class="space-y-3 min-h-[120px]"></div>
             </div>
@@ -125,7 +131,7 @@
             <div class="glass-card p-6 rounded-[32px] box-schedule">
                 <h3 class="title-schedule font-bold mb-6 flex justify-between items-center">
                     <span>خطط لها</span>
-                    <span class="text-[9px] opacity-30">غير عاجل / هام</span>
+                    <span class="status-badge border border-blue-500/30 text-blue-400">غير عاجل / هام</span>
                 </h3>
                 <div id="list-schedule" class="space-y-3 min-h-[120px]"></div>
             </div>
@@ -133,7 +139,7 @@
             <div class="glass-card p-6 rounded-[32px] box-delegate">
                 <h3 class="title-delegate font-bold mb-6 flex justify-between items-center">
                     <span>فوّضها</span>
-                    <span class="text-[9px] opacity-30">عاجل / غير هام</span>
+                    <span class="status-badge border border-orange-500/30 text-orange-400">عاجل / غير هام</span>
                 </h3>
                 <div id="list-delegate" class="space-y-3 min-h-[120px]"></div>
             </div>
@@ -141,7 +147,7 @@
             <div class="glass-card p-6 rounded-[32px] box-delete">
                 <h3 class="title-delete font-bold mb-6 flex justify-between items-center">
                     <span>احذفها</span>
-                    <span class="text-[9px] opacity-30">غير عاجل / غير هام</span>
+                    <span class="status-badge border border-gray-500/30 text-gray-400">غير عاجل / غير هام</span>
                 </h3>
                 <div id="list-delete" class="space-y-3 min-h-[120px]"></div>
             </div>
@@ -149,7 +155,9 @@
     </div>
 
     <script>
-        let tasks = JSON.parse(localStorage.getItem('astra_tasks')) || [];
+        // تغيير المفتاح ليكون خاص بالمصفوفة فقط لمنع الخلط مع الواجهة الرئيسية
+        const MATRIX_KEY = 'astra_matrix_tasks';
+        let tasks = JSON.parse(localStorage.getItem(MATRIX_KEY)) || [];
         
         function applyTheme() {
             const theme = JSON.parse(localStorage.getItem('astra_theme_data'));
@@ -200,7 +208,7 @@
 
         function toggleTask(i) { tasks[i].completed = !tasks[i].completed; save(); }
         function deleteTask(i) { tasks.splice(i, 1); save(); }
-        function save() { localStorage.setItem('astra_tasks', JSON.stringify(tasks)); renderTasks(); }
+        function save() { localStorage.setItem(MATRIX_KEY, JSON.stringify(tasks)); renderTasks(); }
 
         function updateStats() {
             const done = tasks.filter(t => t.completed).length;
@@ -215,7 +223,7 @@
 
         window.addEventListener('storage', (e) => {
             if (e.key === 'astra_theme_data') applyTheme();
-            if (e.key === 'astra_tasks') {
+            if (e.key === MATRIX_KEY) {
                 tasks = JSON.parse(e.newValue) || [];
                 renderTasks();
             }
