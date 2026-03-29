@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astra Matrix - إدارة المهام</title>
+    <title>Astra Matrix - Unified Theme</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            /* القيمة الافتراضية للثيم العام */
+            /* سيتم تحديث هذا المتغير من الـ LocalStorage فوراً */
             --primary-color: #6366f1; 
         }
 
@@ -31,187 +31,191 @@
             border: 1px solid rgba(255, 255, 255, 0.1); 
         }
 
-        .task-item {
-            transition: all 0.3s ease;
-            border-right: 2px solid transparent;
-        }
-
-        .task-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateX(-5px);
-        }
-
-        /* تنسيقات الثيم المختار من الإعدادات */
+        /* تنسيقات الثيم الموحد */
         .text-primary { color: var(--primary-color) !important; }
         .bg-primary { background-color: var(--primary-color) !important; }
         .border-primary { border-color: var(--primary-color) !important; }
-        .accent-primary { accent-color: var(--primary-color) !important; }
-        
         .svg-primary { stroke: var(--primary-color) !important; }
         
         #add-btn {
             background-color: var(--primary-color) !important;
+            box-shadow: 0 10px 20px -5px var(--primary-color);
+        }
+
+        /* تنسيق دوائر الثيم (الـ 15 ثيم) */
+        .theme-circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .theme-circle:hover { transform: scale(1.2); }
+        .theme-circle.active { border-color: white; transform: scale(1.2); }
+
+        /* تنسيق المصفوفة - تم إزالة الألوان الخاصة بكل مربع لتتبع الثيم المختار */
+        .matrix-quad {
+            border-top: 2px solid var(--primary-color);
             transition: all 0.3s ease;
         }
 
-        /* تأثير التوهج للثيم المختار في الإعدادات */
-        .theme-dot.active {
-            outline: 2px solid white;
-            outline-offset: 2px;
-            transform: scale(1.2);
+        .task-item {
+            transition: all 0.3s ease;
+            border-right: 3px solid var(--primary-color);
         }
 
-        /* تنسيقات المصفوفة الأصلية بالألوان المحددة */
-        .box-do { border-right: 3px solid #f87171 !important; }
-        .box-schedule { border-right: 3px solid #60a5fa !important; }
-        .box-delegate { border-right: 3px solid #fb923c !important; }
-        .box-delete { border-right: 3px solid #9ca3af !important; }
-
-        .title-do { color: #f87171; }
-        .title-schedule { color: #60a5fa; }
-        .title-delegate { color: #fb923c; }
-        .title-delete { color: #9ca3af; }
+        /* إخفاء واجهة الإعدادات افتراضياً */
+        #settings-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+        }
     </style>
     
-    <!-- كود الحقن الفوري للثيم المختار -->
     <script>
+        // منع الوميض: تطبيق الثيم قبل تحميل الـ body
         (function() {
-            const savedTheme = localStorage.getItem('astra_theme');
-            if (savedTheme) {
-                document.documentElement.style.setProperty('--primary-color', savedTheme);
+            const saved = localStorage.getItem('astra_global_theme');
+            if (saved) {
+                document.documentElement.style.setProperty('--primary-color', saved);
             }
         })();
     </script>
 </head>
-<body class="p-6">
+<body>
 
     <!-- Header -->
     <header class="max-w-4xl mx-auto flex justify-between items-center mb-8">
         <div class="flex items-center gap-4">
-            <a href="index.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all">
-                <svg class="w-5 h-5 svg-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            <button onclick="toggleSettings()" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all">
+                <svg class="w-6 h-6 svg-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
-            </a>
-            <h1 class="text-2xl font-black text-primary" id="main-logo">ASTRA MATRIX</h1>
+            </button>
+            <h1 class="text-3xl font-black tracking-tighter text-primary">ASTRA</h1>
         </div>
         
-        <div class="flex items-center gap-6">
-            <!-- اختيار الثيم العام -->
-            <div class="flex gap-3 p-2 glass-card rounded-xl">
-                <button onclick="updateTheme('#6366f1')" data-color="#6366f1" class="theme-dot w-5 h-5 rounded-full bg-[#6366f1] border border-white/10 hover:scale-110 transition-all"></button>
-                <button onclick="updateTheme('#ec4899')" data-color="#ec4899" class="theme-dot w-5 h-5 rounded-full bg-[#ec4899] border border-white/10 hover:scale-110 transition-all"></button>
-                <button onclick="updateTheme('#22c55e')" data-color="#22c55e" class="theme-dot w-5 h-5 rounded-full bg-[#22c55e] border border-white/10 hover:scale-110 transition-all"></button>
-                <button onclick="updateTheme('#f59e0b')" data-color="#f59e0b" class="theme-dot w-5 h-5 rounded-full bg-[#f59e0b] border border-white/10 hover:scale-110 transition-all"></button>
-            </div>
-
-            <div class="text-right">
-                <p class="text-[10px] opacity-40 tracking-widest uppercase">معدل الإنجاز</p>
-                <span id="comp-rate" class="text-2xl font-bold text-white">0%</span>
-            </div>
+        <div class="text-right">
+            <p class="text-[10px] opacity-40 uppercase tracking-widest">معدل الإنجاز</p>
+            <span id="comp-rate" class="text-2xl font-bold">0%</span>
         </div>
     </header>
 
-    <!-- واجهة المصفوفة -->
-    <div id="view-matrix" class="max-w-4xl mx-auto pb-24">
-        <!-- منطقة إضافة المهمة -->
+    <!-- Settings Modal (كما في الصورة الثانية) -->
+    <div id="settings-modal" onclick="toggleSettings()">
+        <div class="glass-card p-8 rounded-[32px] max-w-sm w-full m-4" onclick="event.stopPropagation()">
+            <h2 class="text-xl font-bold mb-6 text-center">اختر السمة (15 ثيم)</h2>
+            <div class="grid grid-cols-5 gap-4 mb-8 justify-items-center" id="theme-grid">
+                <!-- سيتم توليد الـ 15 لون هنا -->
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-3 glass-card rounded-xl">
+                    <span class="text-sm">لغة التطبيق</span>
+                    <span class="text-primary font-bold">العربية</span>
+                </div>
+                <button onclick="clearTasks()" class="w-full p-3 bg-red-500/10 text-red-400 rounded-xl text-sm hover:bg-red-500/20 transition-all">
+                    مسح جميع المهام
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content (المصفوفة) -->
+    <main class="max-w-4xl mx-auto">
+        <!-- Input Area -->
         <div class="glass-card p-3 rounded-2xl mb-8 flex flex-col sm:flex-row gap-2">
-            <input type="text" id="taskInput" class="bg-transparent flex-grow p-3 outline-none text-white placeholder:text-white/20" placeholder="اكتب مهمة جديدة...">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-3 outline-none text-white placeholder:text-white/20" placeholder="مهمة جديدة...">
             <div class="flex gap-2">
-                <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-xl text-xs outline-none cursor-pointer">
+                <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-xl text-xs outline-none">
                     <option value="do">عاجل وهام</option>
                     <option value="schedule">خطط لها</option>
                     <option value="delegate">فوّضها</option>
                     <option value="delete">احذفها</option>
                 </select>
-                <button onclick="addTask()" class="px-6 py-3 rounded-xl font-bold text-white shadow-lg" id="add-btn">إضافة</button>
+                <button onclick="addTask()" id="add-btn" class="px-8 py-3 rounded-xl font-bold text-white">إضافة</button>
             </div>
         </div>
 
-        <!-- المربعات الأربعة بالألوان الأصلية -->
+        <!-- Matrix Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- الربع 1 -->
-            <div class="glass-card p-5 rounded-3xl box-do">
-                <h3 class="title-do font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>🔴 افعل الآن (عاجل وهام)</span>
-                    <span class="text-[10px] opacity-20">DO</span>
-                </h3>
+            <div class="glass-card p-5 rounded-3xl matrix-quad" id="quad-do">
+                <h3 class="text-primary font-bold mb-4 text-xs">🔴 افعل الآن (DO)</h3>
                 <div id="list-do" class="space-y-2 min-h-[100px]"></div>
             </div>
-
-            <!-- الربع 2 -->
-            <div class="glass-card p-5 rounded-3xl box-schedule">
-                <h3 class="title-schedule font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>🔵 خطط لها (هام غير عاجل)</span>
-                    <span class="text-[10px] opacity-20">SCHEDULE</span>
-                </h3>
+            <div class="glass-card p-5 rounded-3xl matrix-quad" id="quad-schedule">
+                <h3 class="text-primary font-bold mb-4 text-xs">🔵 خطط لها (SCHEDULE)</h3>
                 <div id="list-schedule" class="space-y-2 min-h-[100px]"></div>
             </div>
-
-            <!-- الربع 3 -->
-            <div class="glass-card p-5 rounded-3xl box-delegate">
-                <h3 class="title-delegate font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>🟠 فوّضها (عاجل غير هام)</span>
-                    <span class="text-[10px] opacity-20">DELEGATE</span>
-                </h3>
+            <div class="glass-card p-5 rounded-3xl matrix-quad" id="quad-delegate">
+                <h3 class="text-primary font-bold mb-4 text-xs">🟠 فوّضها (DELEGATE)</h3>
                 <div id="list-delegate" class="space-y-2 min-h-[100px]"></div>
             </div>
-
-            <!-- الربع 4 -->
-            <div class="glass-card p-5 rounded-3xl box-delete">
-                <h3 class="title-delete font-bold mb-4 text-sm flex items-center justify-between">
-                    <span>⚪ احذفها (غير هام وغير عاجل)</span>
-                    <span class="text-[10px] opacity-20">DELETE</span>
-                </h3>
+            <div class="glass-card p-5 rounded-3xl matrix-quad" id="quad-delete">
+                <h3 class="text-primary font-bold mb-4 text-xs">⚪ احذفها (DELETE)</h3>
                 <div id="list-delete" class="space-y-2 min-h-[100px]"></div>
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
-        let tasks = JSON.parse(localStorage.getItem('astra_tasks_pure')) || [];
-        
-        function updateTheme(color) {
-            if(!color) {
-                color = localStorage.getItem('astra_theme') || '#6366f1';
-            }
-            document.documentElement.style.setProperty('--primary-color', color);
-            localStorage.setItem('astra_theme', color);
-            
-            document.querySelectorAll('.theme-dot').forEach(dot => {
-                if(dot.getAttribute('data-color') === color) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
-            });
+        // الألوان الـ 15 المقترحة (كما في الصورة)
+        const colors = [
+            '#ec4899', '#ef4444', '#22c55e', '#000000', '#3b82f6',
+            '#f472b6', '#84cc16', '#06b6d4', '#6366f1', '#111827',
+            '#60a5fa', '#374151', '#fb7185', '#a855f7', '#10b981'
+        ];
 
-            const addBtn = document.getElementById('add-btn');
-            if(addBtn) {
-                addBtn.style.boxShadow = `0 10px 20px -5px ${color}66`;
-            }
+        let tasks = JSON.parse(localStorage.getItem('astra_tasks')) || [];
+
+        // توليد شبكة الألوان في الإعدادات
+        const themeGrid = document.getElementById('theme-grid');
+        colors.forEach(color => {
+            const dot = document.createElement('div');
+            dot.className = 'theme-circle';
+            dot.style.backgroundColor = color;
+            dot.onclick = () => applyTheme(color);
+            dot.setAttribute('data-color', color);
+            themeGrid.appendChild(dot);
+        });
+
+        function applyTheme(color) {
+            document.documentElement.style.setProperty('--primary-color', color);
+            localStorage.setItem('astra_global_theme', color);
+            
+            // تحديث الشكل النشط
+            document.querySelectorAll('.theme-circle').forEach(d => {
+                d.classList.toggle('active', d.getAttribute('data-color') === color);
+            });
+        }
+
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
         }
 
         function renderTasks() {
-            ['do', 'schedule', 'delegate', 'delete'].forEach(id => {
-                const el = document.getElementById('list-' + id);
-                if(el) el.innerHTML = '';
-            });
+            ['do', 'schedule', 'delegate', 'delete'].forEach(id => document.getElementById('list-' + id).innerHTML = '');
 
             tasks.forEach((t, i) => {
                 const list = document.getElementById('list-' + t.quadrant);
-                if (list) {
-                    const item = document.createElement('div');
-                    item.className = `task-item glass-card p-3 rounded-xl flex items-center justify-between ${t.completed ? 'opacity-30' : ''}`;
-                    item.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="w-4 h-4 accent-primary cursor-pointer">
-                            <span class="text-sm ${t.completed ? 'line-through opacity-50' : ''}">${t.text}</span>
-                        </div>
-                        <button onclick="deleteTask(${i})" class="text-white/20 hover:text-red-500 transition-colors text-lg">✕</button>
-                    `;
-                    list.appendChild(item);
-                }
+                const item = document.createElement('div');
+                item.className = `task-item glass-card p-3 rounded-xl flex items-center justify-between ${t.completed ? 'opacity-30' : ''}`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="accent-primary">
+                        <span class="text-sm">${t.text}</span>
+                    </div>
+                    <button onclick="deleteTask(${i})" class="opacity-20 hover:opacity-100">✕</button>
+                `;
+                list.appendChild(item);
             });
 
             const done = tasks.filter(t => t.completed).length;
@@ -220,45 +224,23 @@
 
         function addTask() {
             const input = document.getElementById('taskInput');
-            const quad = document.getElementById('quadSelect').value;
             if (input.value.trim()) {
-                tasks.unshift({
-                    text: input.value.trim(),
-                    quadrant: quad,
-                    completed: false,
-                    id: Date.now()
-                });
+                tasks.unshift({ text: input.value.trim(), quadrant: document.getElementById('quadSelect').value, completed: false });
                 input.value = '';
                 save();
             }
         }
 
-        function toggleTask(i) {
-            tasks[i].completed = !tasks[i].completed;
-            save();
-        }
+        function toggleTask(i) { tasks[i].completed = !tasks[i].completed; save(); }
+        function deleteTask(i) { tasks.splice(i, 1); save(); }
+        function clearTasks() { if(confirm('هل أنت متأكد؟')) { tasks = []; save(); toggleSettings(); } }
+        function save() { localStorage.setItem('astra_tasks', JSON.stringify(tasks)); renderTasks(); }
 
-        function deleteTask(i) {
-            tasks.splice(i, 1);
-            save();
-        }
-
-        function save() {
-            localStorage.setItem('astra_tasks_pure', JSON.stringify(tasks));
+        window.onload = () => {
+            const saved = localStorage.getItem('astra_global_theme') || '#6366f1';
+            applyTheme(saved);
             renderTasks();
-        }
-
-        window.addEventListener('load', () => {
-            const savedTheme = localStorage.getItem('astra_theme') || '#6366f1';
-            updateTheme(savedTheme); 
-            renderTasks();
-        });
-
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'astra_theme') {
-                updateTheme(e.newValue);
-            }
-        });
+        };
     </script>
 </body>
 </html>
