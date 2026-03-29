@@ -10,8 +10,7 @@
     <style>
         :root {
             --primary-color: #6366f1; 
-            /* تعديل التوهج ليكون خفيفاً ومركزاً كما في الصورة 1 */
-            --bg-gradient: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, #000 70%);
+            --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #000);
         }
 
         @keyframes fadeIn {
@@ -25,9 +24,9 @@
         }
 
         @keyframes pulseGlow {
-            0% { box-shadow: 0 0 5px var(--primary-color); }
-            50% { box-shadow: 0 0 20px var(--primary-color); }
-            100% { box-shadow: 0 0 5px var(--primary-color); }
+            0% { box-shadow: 0 0 2px var(--primary-color); }
+            50% { box-shadow: 0 0 10px var(--primary-color); }
+            100% { box-shadow: 0 0 2px var(--primary-color); }
         }
 
         @keyframes taskIn {
@@ -36,16 +35,8 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* تأثير صورة الإنجاز */
-        @keyframes achievementPop {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            50% { transform: translate(-50%, -60%) scale(1.2); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        }
-
         body { 
-            background: #000;
-            background-image: var(--bg-gradient);
+            background: var(--bg-gradient); 
             background-attachment: fixed; 
             min-height: 100vh; 
             font-family: 'Tajawal', 'Inter', sans-serif;
@@ -53,6 +44,7 @@
             margin: 0;
             padding: 20px;
             overflow-x: hidden;
+            transition: background 0.8s ease;
         }
         
         .glass-card { 
@@ -74,27 +66,6 @@
             background: rgba(255, 255, 255, 0.08);
             transform: translateX(-5px) scale(1.01);
             border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        #achievement-overlay {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            display: none;
-            pointer-events: none;
-        }
-
-        .achievement-card {
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(20px);
-            border: 2px solid gold;
-            padding: 2rem;
-            border-radius: 2rem;
-            text-align: center;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
-            animation: achievementPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .svg-primary { stroke: var(--primary-color) !important; }
@@ -148,14 +119,6 @@
     </style>
 </head>
 <body class="p-4 md:p-8">
-
-    <div id="achievement-overlay">
-        <div class="achievement-card">
-            <div class="text-6xl mb-4">🏆</div>
-            <h2 class="text-2xl font-bold text-white mb-2">عمل رائع!</h2>
-            <p class="text-gold-400 opacity-80">تم إنجاز المهمة بنجاح</p>
-        </div>
-    </div>
 
     <header class="max-w-5xl mx-auto flex justify-between items-center mb-12" style="animation: fadeIn 0.6s ease-out;">
         <div class="flex items-center gap-6">
@@ -295,12 +258,16 @@
                 const theme = JSON.parse(themeData);
                 document.documentElement.style.setProperty('--primary-color', theme.accent);
                 
-                const bgValue = `radial-gradient(circle at center, ${theme.accent}22, #000 75%)`;
-                document.documentElement.style.setProperty('--bg-gradient', bgValue);
-                document.body.style.background = bgValue;
+                if (theme.background) {
+                    document.body.style.background = theme.background;
+                } else {
+                    const bgValue = `radial-gradient(circle at top right, ${theme.accent}44, #000 70%)`;
+                    document.documentElement.style.setProperty('--bg-gradient', bgValue);
+                    document.body.style.background = bgValue;
+                }
                 
                 const btn = document.getElementById('add-btn');
-                if(btn) btn.style.boxShadow = `0 10px 25px -5px ${theme.accent}66`;
+                if(btn) btn.style.boxShadow = `0 10px 25px -5px ${theme.accent}44`;
             }
             updateStats();
         }
@@ -357,18 +324,7 @@
 
         function toggleTask(i) { 
             tasks[i].completed = !tasks[i].completed; 
-            if (tasks[i].completed) {
-                showAchievement();
-            }
             save(); 
-        }
-
-        function showAchievement() {
-            const overlay = document.getElementById('achievement-overlay');
-            overlay.style.display = 'block';
-            setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 2000);
         }
 
         function deleteWithAnimation(btn, i) {
@@ -415,7 +371,8 @@
             const glow = document.getElementById('stat-glow');
             const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
             if(glow) {
-                glow.style.boxShadow = `0 0 ${15 + (rate/4)}px ${primaryColor}`;
+                // تقليل شدة التوهج هنا عبر تقليل قيم الـ spread
+                glow.style.boxShadow = `0 0 ${8 + (rate/10)}px ${primaryColor}66`;
                 glow.style.borderColor = rate === 100 ? '#4ade80' : primaryColor;
             }
         }
