@@ -82,7 +82,6 @@
             animation: pulseGlow 4s infinite ease-in-out;
         }
 
-        /* Quadrant Specific Colors */
         .box-do { border-top: 4px solid #ef4444 !important; }
         .box-schedule { border-top: 4px solid #3b82f6 !important; }
         .box-delegate { border-top: 4px solid #f59e0b !important; }
@@ -93,18 +92,11 @@
         .title-delegate { color: #fb923c; }
         .title-delete { color: #9ca3af; }
 
-        .search-input:focus {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: var(--primary-color);
-        }
-
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
-        .btn-action {
-            transition: all 0.2s ease;
-        }
+        .btn-action { transition: all 0.2s ease; }
         .btn-action:active { transform: scale(0.92); }
     </style>
 </head>
@@ -143,8 +135,6 @@
     </header>
 
     <main class="max-w-6xl mx-auto space-y-8">
-        
-        <!-- أدوات التحكم والبحث -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <div class="lg:col-span-8 glass-card p-2 rounded-3xl flex flex-col md:flex-row gap-2">
                 <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" placeholder="ما هي المهمة التالية؟">
@@ -165,51 +155,34 @@
             </div>
         </div>
 
-        <!-- شبكة المصفوفة -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- الربع الأول -->
             <div class="glass-card p-6 rounded-[2.5rem] box-do group">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="title-do font-black flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                        افعل الآن
-                    </h3>
+                    <h3 class="title-do font-black flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>افعل الآن</h3>
                     <span class="text-[10px] font-bold py-1 px-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">P1: عاجل / هام</span>
                 </div>
                 <div id="list-do" class="space-y-3 min-h-[160px] max-h-[400px] overflow-y-auto custom-scrollbar pr-2"></div>
             </div>
 
-            <!-- الربع الثاني -->
             <div class="glass-card p-6 rounded-[2.5rem] box-schedule">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="title-schedule font-black flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                        خطط لها
-                    </h3>
+                    <h3 class="title-schedule font-black flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500"></span>خطط لها</h3>
                     <span class="text-[10px] font-bold py-1 px-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">P2: غير عاجل / هام</span>
                 </div>
                 <div id="list-schedule" class="space-y-3 min-h-[160px] max-h-[400px] overflow-y-auto custom-scrollbar pr-2"></div>
             </div>
 
-            <!-- الربع الثالث -->
             <div class="glass-card p-6 rounded-[2.5rem] box-delegate">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="title-delegate font-black flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-orange-500"></span>
-                        فوّضها
-                    </h3>
+                    <h3 class="title-delegate font-black flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-500"></span>فوّضها</h3>
                     <span class="text-[10px] font-bold py-1 px-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">P3: عاجل / غير هام</span>
                 </div>
                 <div id="list-delegate" class="space-y-3 min-h-[160px] max-h-[400px] overflow-y-auto custom-scrollbar pr-2"></div>
             </div>
 
-            <!-- الربع الرابع -->
             <div class="glass-card p-6 rounded-[2.5rem] box-delete">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="title-delete font-black flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-gray-500"></span>
-                        احذفها
-                    </h3>
+                    <h3 class="title-delete font-black flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-gray-500"></span>احذفها</h3>
                     <span class="text-[10px] font-bold py-1 px-3 rounded-lg bg-gray-500/10 border border-gray-500/20 text-gray-400">P4: غير عاجل / غير هام</span>
                 </div>
                 <div id="list-delete" class="space-y-3 min-h-[160px] max-h-[400px] overflow-y-auto custom-scrollbar pr-2"></div>
@@ -221,6 +194,32 @@
         const MATRIX_KEY = 'astra_matrix_tasks_pro';
         let tasks = JSON.parse(localStorage.getItem(MATRIX_KEY)) || [];
         let currentFilter = 'all';
+
+        // --- وظيفة تشغيل الصوت عند إتمام المهمة ---
+        function playSuccessSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sine';
+                // نغمة مزدوجة سريعة (مثالية للنجاح)
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1); // A5
+
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } catch (e) {
+                console.log("Audio play blocked or unsupported");
+            }
+        }
 
         function applyTheme() {
             const themeData = localStorage.getItem('astra_theme_data');
@@ -285,13 +284,6 @@
                 }
             });
 
-            if (filteredTasks.length === 0 && searchQuery !== "") {
-                quads.forEach(id => {
-                    const el = document.getElementById('list-' + id);
-                    if(el.innerHTML === '') el.innerHTML = '<p class="text-[10px] opacity-20 text-center py-4">لا توجد نتائج</p>';
-                });
-            }
-
             updateStats();
         }
 
@@ -299,19 +291,21 @@
             const input = document.getElementById('taskInput');
             const quad = document.getElementById('quadSelect').value;
             if (input.value.trim()) {
-                tasks.unshift({ 
-                    text: input.value.trim(), 
-                    quadrant: quad, 
-                    completed: false,
-                    id: Date.now()
-                });
+                tasks.unshift({ text: input.value.trim(), quadrant: quad, completed: false, id: Date.now() });
                 input.value = '';
                 save();
             }
         }
 
         function toggleTask(i) { 
-            tasks[i].completed = !tasks[i].completed; 
+            const isMarkingAsDone = !tasks[i].completed;
+            tasks[i].completed = isMarkingAsDone;
+            
+            // تشغيل الصوت فقط عند تحويل المهمة لمكتملة
+            if (isMarkingAsDone) {
+                playSuccessSound();
+            }
+            
             save(); 
         }
 
@@ -336,29 +330,11 @@
             const done = tasks.filter(t => t.completed).length;
             const total = tasks.length;
             const rate = total ? Math.round((done / total) * 100) : 0;
-            
             const rateEl = document.getElementById('comp-rate');
             const countEl = document.getElementById('task-count');
             if(countEl) countEl.innerText = `${total} مهام | ${done} مكتملة`;
-
             if(!rateEl) return;
-            
-            let current = parseInt(rateEl.innerText) || 0;
-            const step = rate > current ? 1 : -1;
-            
-            if(current !== rate) {
-                const interval = setInterval(() => {
-                    if (current === rate) {
-                        clearInterval(interval);
-                    } else {
-                        current += step;
-                        rateEl.innerText = current + '%';
-                    }
-                }, 15);
-            } else {
-                rateEl.innerText = rate + '%';
-            }
-            
+            rateEl.innerText = rate + '%';
             const glow = document.getElementById('stat-glow');
             const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#6366f1';
             if(glow) {
@@ -367,22 +343,8 @@
             }
         }
 
-        window.onload = () => {
-            applyTheme();
-            renderTasks();
-        };
-
-        document.getElementById('taskInput').addEventListener('keypress', (e) => { 
-            if (e.key === 'Enter') addTask(); 
-        });
-
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'astra_theme_data') applyTheme();
-            if (e.key === MATRIX_KEY) {
-                tasks = JSON.parse(e.newValue) || [];
-                renderTasks();
-            }
-        });
+        window.onload = () => { applyTheme(); renderTasks(); };
+        document.getElementById('taskInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
     </script>
 </body>
 </html>
