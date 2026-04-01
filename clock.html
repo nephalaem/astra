@@ -109,18 +109,96 @@
         .alert-ring {
             animation: ring 0.5s ease-in-out 3;
         }
+        
+        /* Theme Dropdown Styles - Added */
+        .theme-btn {
+            cursor: pointer;
+        }
+        
+        .theme-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 0.75rem;
+            width: 340px;
+            background: rgba(15, 15, 25, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 1.5rem;
+            padding: 1rem;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .theme-dropdown.show {
+            display: block;
+        }
+        
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .theme-option {
+            aspect-ratio: 1;
+            border-radius: 1rem;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .theme-option:hover {
+            transform: scale(1.08);
+            border-color: white;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .theme-name {
+            font-size: 0.65rem;
+            text-align: center;
+            margin-top: 0.25rem;
+            opacity: 0.8;
+        }
+        
+        .dropdown-header {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            margin-bottom: 0.75rem;
+            text-align: center;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <!-- Header -->
     <header class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-6 relative">
             <button onclick="window.history.back()" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group">
                 <svg class="w-6 h-6 text-indigo-400 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
             </button>
+            
+            <!-- Theme Button with Dropdown - Added -->
+            <div class="relative">
+                <button onclick="toggleThemeDropdown()" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group theme-btn">
+                    <svg class="w-6 h-6 text-indigo-400 group-hover:rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                    </svg>
+                </button>
+                
+                <!-- Theme Dropdown -->
+                <div id="themeDropdown" class="theme-dropdown">
+                    <div class="dropdown-header">🎨 اختر ثيمك المفضل</div>
+                    <div class="theme-grid" id="themeGrid"></div>
+                </div>
+            </div>
+            
             <div>
                 <h1 class="text-4xl font-black tracking-tight" style="color: var(--primary-color);">ASTRA CLOCK</h1>
                 <p class="text-[10px] opacity-40 tracking-[0.2em] font-bold uppercase mt-1">Timer & Stopwatch</p>
@@ -281,6 +359,98 @@
         
         // Tasks Storage
         let customTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
+        
+        // ========== 20 Themes - Added ==========
+        const themes = [
+            { bg: 'radial-gradient(circle at top right, #1e1b4b, #000)', accent: '#6366f1', name: 'بنفسجي' },
+            { bg: 'radial-gradient(circle at top right, #0f172a, #000)', accent: '#38bdf8', name: 'أزرق' },
+            { bg: 'radial-gradient(circle at top right, #064e3b, #000)', accent: '#34d399', name: 'زيتي' },
+            { bg: 'radial-gradient(circle at top right, #451a03, #000)', accent: '#fbbf24', name: 'ذهبي' },
+            { bg: 'radial-gradient(circle at top right, #4c0519, #000)', accent: '#fb7185', name: 'وردي' },
+            { bg: 'radial-gradient(circle at top right, #1e1e1e, #000)', accent: '#ffffff', name: 'أبيض' },
+            { bg: 'radial-gradient(circle at top right, #2e1065, #000)', accent: '#a78bfa', name: 'بنفسجي فاتح' },
+            { bg: 'radial-gradient(circle at top right, #0c4a6e, #000)', accent: '#7dd3fc', name: 'سماوي' },
+            { bg: 'radial-gradient(circle at top right, #3f6212, #000)', accent: '#a3e635', name: 'ليموني' },
+            { bg: 'radial-gradient(circle at top right, #7c2d12, #000)', accent: '#fb923c', name: 'برتقالي' },
+            { bg: 'radial-gradient(circle at top right, #134e4a, #000)', accent: '#2dd4bf', name: 'فيروزي' },
+            { bg: 'radial-gradient(circle at top right, #581c87, #000)', accent: '#d8b4fe', name: 'لافندر' },
+            { bg: 'radial-gradient(circle at top right, #831843, #000)', accent: '#f472b6', name: 'زهري' },
+            { bg: 'radial-gradient(circle at top right, #0f172a, #334155)', accent: '#94a3b8', name: 'رمادي' },
+            { bg: 'radial-gradient(circle at top right, #1e1b4b, #4338ca)', accent: '#818cf8', name: 'نيلي' },
+            { bg: 'radial-gradient(circle at top right, #2b2d42, #1e1b4b)', accent: '#8d99ae', name: 'فضي' },
+            { bg: 'radial-gradient(circle at top right, #6d28d9, #4c1d95)', accent: '#c084fc', name: 'أرجواني' },
+            { bg: 'radial-gradient(circle at top right, #b91c1c, #7f1a1a)', accent: '#f87171', name: 'أحمر' },
+            { bg: 'radial-gradient(circle at top right, #0f172a, #1e293b)', accent: '#60a5fa', name: 'أزرق داكن' },
+            { bg: 'radial-gradient(circle at top right, #2dd4bf, #0d9488)', accent: '#f0fdfa', name: 'نعناعي' }
+        ];
+        
+        // Initialize Theme Grid
+        function initThemeGrid() {
+            const grid = document.getElementById('themeGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            themes.forEach(theme => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'text-center';
+                
+                const option = document.createElement('div');
+                option.className = 'theme-option';
+                option.style.background = theme.bg;
+                option.title = theme.name;
+                option.onclick = () => {
+                    applyThemeToClock(theme);
+                    toggleThemeDropdown();
+                };
+                
+                const nameSpan = document.createElement('div');
+                nameSpan.className = 'theme-name';
+                nameSpan.innerText = theme.name;
+                nameSpan.style.color = theme.accent;
+                
+                wrapper.appendChild(option);
+                wrapper.appendChild(nameSpan);
+                grid.appendChild(wrapper);
+            });
+        }
+        
+        // Apply Theme to Clock Page
+        function applyThemeToClock(theme) {
+            document.body.style.background = theme.bg;
+            document.documentElement.style.setProperty('--primary-color', theme.accent);
+            localStorage.setItem('astra_clock_theme', JSON.stringify(theme));
+            
+            const titleElement = document.querySelector('h1');
+            if (titleElement) titleElement.style.color = theme.accent;
+        }
+        
+        // Load saved theme
+        function loadSavedClockTheme() {
+            const saved = localStorage.getItem('astra_clock_theme');
+            if (saved) {
+                try {
+                    const theme = JSON.parse(saved);
+                    applyThemeToClock(theme);
+                } catch(e) {}
+            }
+        }
+        
+        // Toggle Theme Dropdown
+        function toggleThemeDropdown() {
+            const dropdown = document.getElementById('themeDropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('themeDropdown');
+            const themeBtn = document.querySelector('.theme-btn');
+            if (dropdown && themeBtn && !themeBtn.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
         
         // Update current time
         function updateCurrentTime() {
@@ -518,67 +688,4 @@
             }).join('');
         }
         
-        function openAddTaskModal() {
-            document.getElementById('taskModal').classList.remove('hidden');
-            document.getElementById('taskModal').style.display = 'flex';
-        }
-        
-        function closeTaskModal(event) {
-            if (event && event.target !== event.currentTarget) return;
-            document.getElementById('taskModal').classList.add('hidden');
-            document.getElementById('taskModal').style.display = 'none';
-        }
-        
-        // Apply theme from main app if exists
-        function applyTheme() {
-            const themeData = localStorage.getItem('astra_theme_data');
-            if (themeData) {
-                const theme = JSON.parse(themeData);
-                document.documentElement.style.setProperty('--primary-color', theme.accent);
-                if (theme.background) document.body.style.background = theme.background;
-            }
-        }
-        
-        // Check recurring tasks on load
-        function checkRecurringTasks() {
-            const lastCheck = localStorage.getItem('astra_clock_last_check');
-            const today = new Date().toDateString();
-            
-            if (lastCheck !== today) {
-                // Check for recurring tasks to add back
-                const allTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
-                let modified = false;
-                
-                allTasks.forEach(task => {
-                    if (task.recurring !== 'none') {
-                        // We don't auto-add, just keep them in list
-                        // They remain available for reuse
-                        modified = true;
-                    }
-                });
-                
-                if (modified) {
-                    renderTasksList();
-                }
-                localStorage.setItem('astra_clock_last_check', today);
-            }
-        }
-        
-        // Request notification permission on load
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-        
-        // Initialize
-        applyTheme();
-        renderTasksList();
-        checkRecurringTasks();
-        setTimerFromInput();
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeTaskModal();
-        });
-    </script>
-</body>
-</html>
+        function
