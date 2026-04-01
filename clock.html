@@ -113,7 +113,6 @@
 </head>
 <body class="p-4 md:p-8">
 
-    <!-- Header -->
     <header class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
         <div class="flex items-center gap-6">
             <button onclick="window.history.back()" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group">
@@ -136,9 +135,7 @@
     </header>
 
     <main class="max-w-6xl mx-auto space-y-8">
-        <!-- Timer & Stopwatch Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Timer Section -->
             <div class="glass-card p-6 rounded-[2rem]">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-black flex items-center gap-2">
@@ -167,7 +164,6 @@
                 </div>
             </div>
 
-            <!-- Stopwatch Section -->
             <div class="glass-card p-6 rounded-[2rem]">
                 <h3 class="text-xl font-black flex items-center gap-2 mb-6">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +183,6 @@
             </div>
         </div>
 
-        <!-- Tasks Section -->
         <div class="glass-card p-6 rounded-[2rem]">
             <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <h3 class="text-xl font-black flex items-center gap-2">
@@ -199,19 +194,6 @@
                 <button onclick="openAddTaskModal()" class="btn-action px-6 py-2 rounded-2xl font-bold bg-indigo-600/50 hover:bg-indigo-600 transition-all text-sm">+ إضافة مهمة جديدة</button>
             </div>
 
-            <!-- Quick Tasks -->
-            <div class="mb-8">
-                <p class="text-sm opacity-60 mb-3">⚡ مهام سريعة:</p>
-                <div class="flex flex-wrap gap-3">
-                    <button onclick="startTaskWithTime(120, 'تنظيف الأسنان')" class="task-item px-4 py-2 rounded-xl text-sm">🦷 تنظيف الأسنان (2 د)</button>
-                    <button onclick="startTaskWithTime(30, 'شرب الماء')" class="task-item px-4 py-2 rounded-xl text-sm">💧 شرب الماء (30 ث)</button>
-                    <button onclick="startTaskWithTime(300, 'تمارين خفيفة')" class="task-item px-4 py-2 rounded-xl text-sm">🏃 تمارين خفيفة (5 د)</button>
-                    <button onclick="startTaskWithTime(600, 'استراحة قصيرة')" class="task-item px-4 py-2 rounded-xl text-sm">🧘 استراحة قصيرة (10 د)</button>
-                    <button onclick="startTaskWithTime(180, 'تأمل')" class="task-item px-4 py-2 rounded-xl text-sm">🧠 تأمل (3 د)</button>
-                </div>
-            </div>
-
-            <!-- Custom Tasks List -->
             <div>
                 <p class="text-sm opacity-60 mb-3">📋 مهامي المخصصة:</p>
                 <div id="tasksList" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar"></div>
@@ -222,7 +204,6 @@
         </div>
     </main>
 
-    <!-- Add Task Modal -->
     <div id="taskModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden items-center justify-center" onclick="closeTaskModal(event)">
         <div class="glass-card p-8 rounded-[2rem] max-w-md w-full mx-4" onclick="event.stopPropagation()">
             <h3 class="text-2xl font-bold mb-4">➕ إضافة مهمة جديدة</h3>
@@ -545,14 +526,11 @@
             const today = new Date().toDateString();
             
             if (lastCheck !== today) {
-                // Check for recurring tasks to add back
                 const allTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
                 let modified = false;
                 
                 allTasks.forEach(task => {
                     if (task.recurring !== 'none') {
-                        // We don't auto-add, just keep them in list
-                        // They remain available for reuse
                         modified = true;
                     }
                 });
