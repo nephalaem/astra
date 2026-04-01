@@ -14,6 +14,7 @@
             --glass: rgba(255, 255, 255, 0.03);
             --glass-hover: rgba(255, 255, 255, 0.08);
             --border: rgba(255, 255, 255, 0.08);
+            --accent-glow: 0 0 20px rgba(99, 102, 241, 0.4);
         }
 
         @keyframes fadeIn {
@@ -28,8 +29,15 @@
 
         @keyframes ring {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            25% { transform: scale(1.1) rotate(2deg); }
+            50% { transform: scale(1) rotate(-2deg); }
+            75% { transform: scale(1.1) rotate(2deg); }
             100% { transform: scale(1); }
+        }
+
+        @keyframes progressAnim {
+            from { width: 0%; }
+            to { width: 100%; }
         }
 
         body { 
@@ -48,6 +56,8 @@
             border: 1px solid var(--border); 
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
             animation: fadeIn 0.6s ease-out forwards;
+            position: relative;
+            overflow: hidden;
         }
 
         .timer-display {
@@ -60,6 +70,18 @@
             background-clip: text;
             color: transparent;
             text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+            z-index: 10;
+            position: relative;
+        }
+
+        .progress-bar-bg {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-color);
+            transition: width 1s linear;
+            box-shadow: var(--accent-glow);
         }
 
         .task-item {
@@ -72,15 +94,33 @@
 
         .task-item:hover {
             background: var(--glass-hover);
-            transform: translateY(-2px);
+            transform: translateX(-5px);
             border-color: rgba(255, 255, 255, 0.15);
         }
 
         .btn-action {
             transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
         }
         .btn-action:active {
             transform: scale(0.95);
+        }
+        .btn-action::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+        .btn-action:hover::after {
+            width: 200%;
+            height: 200%;
         }
 
         .recurring-badge {
@@ -104,10 +144,22 @@
         .time-input:focus {
             border-color: var(--primary-color);
             background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
         }
 
         .alert-ring {
-            animation: ring 0.5s ease-in-out 3;
+            animation: ring 0.4s ease-in-out infinite;
+            color: #ef4444 !important;
+        }
+
+        .lap-item {
+            font-family: 'Inter', monospace;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent);
         }
     </style>
 </head>
@@ -122,14 +174,22 @@
             </button>
             <div>
                 <h1 class="text-4xl font-black tracking-tight" style="color: var(--primary-color);">ASTRA CLOCK</h1>
-                <p class="text-[10px] opacity-40 tracking-[0.2em] font-bold uppercase mt-1">Timer & Stopwatch</p>
+                <p class="text-[10px] opacity-40 tracking-[0.2em] font-bold uppercase mt-1">Advanced Timer & Performance Tools</p>
             </div>
         </div>
         
-        <div class="glass-card py-3 px-6 rounded-[2rem]">
-            <div class="text-center">
-                <p class="text-[10px] opacity-40 tracking-widest uppercase">الوقت الحالي</p>
-                <p id="currentTime" class="text-xl font-mono font-bold">--:--:--</p>
+        <div class="flex gap-4">
+            <div class="glass-card py-3 px-6 rounded-[2rem] stats-card hidden md:block">
+                <div class="text-center">
+                    <p class="text-[10px] opacity-40 tracking-widest uppercase">المهام المنجزة</p>
+                    <p id="taskStats" class="text-xl font-bold text-indigo-400">0</p>
+                </div>
+            </div>
+            <div class="glass-card py-3 px-6 rounded-[2rem]">
+                <div class="text-center">
+                    <p class="text-[10px] opacity-40 tracking-widest uppercase">الوقت الحالي</p>
+                    <p id="currentTime" class="text-xl font-mono font-bold">--:--:--</p>
+                </div>
             </div>
         </div>
     </header>
@@ -138,26 +198,29 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="glass-card p-6 rounded-[2rem]">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-black flex items-center gap-2">
+                    <h3 class="text-xl font-black flex items-center gap-2 text-indigo-400">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        مؤقت
+                        مؤقت تنازلي
                     </h3>
                     <div class="flex gap-2">
-                        <button onclick="setQuickTimer(120)" class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition-all">2 د</button>
-                        <button onclick="setQuickTimer(300)" class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition-all">5 د</button>
-                        <button onclick="setQuickTimer(600)" class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition-all">10 د</button>
-                        <button onclick="setQuickTimer(1800)" class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition-all">30 د</button>
+                        <button onclick="setQuickTimer(120)" class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition-all border border-white/5">2 د</button>
+                        <button onclick="setQuickTimer(300)" class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition-all border border-white/5">5 د</button>
+                        <button onclick="setQuickTimer(1500)" class="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">25 د (بومودورو)</button>
                     </div>
                 </div>
                 
-                <div class="text-center mb-6">
-                    <div id="timerDisplay" class="timer-display text-6xl md:text-7xl mb-4">00:00:00</div>
-                    <div class="flex justify-center gap-3">
-                        <input type="number" id="timerMinutes" placeholder="دقائق" class="time-input w-28" value="0" min="0">
-                        <input type="number" id="timerSeconds" placeholder="ثواني" class="time-input w-28" value="0" min="0" max="59">
-                        <button onclick="startTimer()" id="timerStartBtn" class="btn-action px-6 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 transition-all">▶ بدء</button>
+                <div class="text-center mb-6 relative">
+                    <div id="timerDisplay" class="timer-display text-6xl md:text-8xl mb-4">00:00:00</div>
+                    <div id="timerProgressBar" class="progress-bar-bg" style="width: 0%"></div>
+                    
+                    <div class="flex flex-wrap justify-center gap-3 mt-8">
+                        <div class="flex gap-2 bg-black/20 p-2 rounded-2xl border border-white/5">
+                            <input type="number" id="timerMinutes" placeholder="دقائق" class="time-input w-20" value="0" min="0">
+                            <input type="number" id="timerSeconds" placeholder="ثواني" class="time-input w-20" value="0" min="0" max="59">
+                        </div>
+                        <button onclick="startTimer()" id="timerStartBtn" class="btn-action px-6 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all">▶ بدء</button>
                         <button onclick="stopTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-red-600/50 hover:bg-red-600 transition-all">⏸ إيقاف</button>
                         <button onclick="resetTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20 transition-all">↺ إعادة</button>
                     </div>
@@ -165,125 +228,155 @@
             </div>
 
             <div class="glass-card p-6 rounded-[2rem]">
-                <h3 class="text-xl font-black flex items-center gap-2 mb-6">
+                <h3 class="text-xl font-black flex items-center gap-2 mb-6 text-emerald-400">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
-                    كرونومتر
+                    كرونومتر متقدم
                 </h3>
                 
                 <div class="text-center mb-6">
-                    <div id="stopwatchDisplay" class="timer-display text-6xl md:text-7xl mb-4">00:00:00</div>
-                    <div class="flex justify-center gap-3">
-                        <button onclick="startStopwatch()" class="btn-action px-8 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 transition-all">▶ بدء</button>
+                    <div id="stopwatchDisplay" class="timer-display text-6xl md:text-8xl mb-4">00:00:00</div>
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <button onclick="startStopwatch()" class="btn-action px-8 py-3 rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20 transition-all">▶ بدء</button>
                         <button onclick="stopStopwatch()" class="btn-action px-8 py-3 rounded-2xl font-bold bg-red-600/50 hover:bg-red-600 transition-all">⏸ إيقاف</button>
-                        <button onclick="resetStopwatch()" class="btn-action px-8 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20 transition-all">↺ إعادة</button>
+                        <button onclick="recordLap()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20 transition-all">🏁 دورة</button>
+                        <button onclick="resetStopwatch()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/5 hover:bg-white/10 transition-all">↺ تصفير</button>
                     </div>
                 </div>
+
+                <div id="lapsContainer" class="mt-4 max-h-32 overflow-y-auto custom-scrollbar space-y-1"></div>
             </div>
         </div>
 
         <div class="glass-card p-6 rounded-[2rem]">
             <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                <h3 class="text-xl font-black flex items-center gap-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
-                    المهام المرتبطة بالوقت
-                </h3>
-                <button onclick="openAddTaskModal()" class="btn-action px-6 py-2 rounded-2xl font-bold bg-indigo-600/50 hover:bg-indigo-600 transition-all text-sm">+ إضافة مهمة جديدة</button>
+                <div class="flex flex-col">
+                    <h3 class="text-xl font-black flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        المهام المجدولة
+                    </h3>
+                    <span class="text-[10px] text-white/40 mr-8">إدارة أهدافك الزمنية بكفاءة</span>
+                </div>
+                <button onclick="openAddTaskModal()" class="btn-action px-6 py-2 rounded-2xl font-bold bg-indigo-600/50 hover:bg-indigo-600 border border-indigo-400/30 transition-all text-sm">+ مهمة مخصصة</button>
             </div>
 
             <div>
-                <p class="text-sm opacity-60 mb-3">📋 مهامي المخصصة:</p>
-                <div id="tasksList" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar"></div>
-                <div id="noTasks" class="text-center py-8 opacity-40 text-sm">
-                    لا توجد مهام مخصصة. أضف مهمتك الأولى!
+                <p class="text-sm opacity-60 mb-3 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+                    قائمة المهام النشطة:
+                </p>
+                <div id="tasksList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto custom-scrollbar p-1"></div>
+                <div id="noTasks" class="text-center py-12 glass-card rounded-2xl border-dashed border-white/10">
+                    <p class="opacity-40 text-sm">لا توجد مهام حالياً</p>
+                    <button onclick="openAddTaskModal()" class="mt-2 text-xs text-indigo-400 underline">أضف مهمة للبدء</button>
                 </div>
             </div>
         </div>
     </main>
 
-    <div id="taskModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden items-center justify-center" onclick="closeTaskModal(event)">
-        <div class="glass-card p-8 rounded-[2rem] max-w-md w-full mx-4" onclick="event.stopPropagation()">
-            <h3 class="text-2xl font-bold mb-4">➕ إضافة مهمة جديدة</h3>
+    <div id="taskModal" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 hidden items-center justify-center p-4" onclick="closeTaskModal(event)">
+        <div class="glass-card p-8 rounded-[2.5rem] max-w-md w-full border-white/20 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black italic">إضافة مهمة</h3>
+                <button onclick="closeTaskModal()" class="p-2 hover:bg-white/10 rounded-full transition-all">✕</button>
+            </div>
             
-            <div class="space-y-4">
+            <div class="space-y-5">
                 <div>
-                    <label class="text-sm opacity-70 block mb-2">اسم المهمة *</label>
-                    <input type="text" id="newTaskName" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:border-indigo-500 transition-all" placeholder="مثال: قراءة كتاب">
+                    <label class="text-xs font-bold uppercase tracking-widest opacity-50 block mb-2">اسم النشاط</label>
+                    <input type="text" id="newTaskName" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-indigo-500 transition-all placeholder:opacity-20" placeholder="مثال: تمرين مكثف">
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-sm opacity-70 block mb-2">الدقائق *</label>
-                        <input type="number" id="newTaskMinutes" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:border-indigo-500" value="1" min="0">
+                        <label class="text-xs font-bold uppercase tracking-widest opacity-50 block mb-2">دقائق</label>
+                        <input type="number" id="newTaskMinutes" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-indigo-500" value="25" min="0">
                     </div>
                     <div>
-                        <label class="text-sm opacity-70 block mb-2">الثواني *</label>
-                        <input type="number" id="newTaskSeconds" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:border-indigo-500" value="0" min="0" max="59">
+                        <label class="text-xs font-bold uppercase tracking-widest opacity-50 block mb-2">ثواني</label>
+                        <input type="number" id="newTaskSeconds" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-indigo-500" value="0" min="0" max="59">
                     </div>
                 </div>
                 
                 <div>
-                    <label class="text-sm opacity-70 block mb-2">التكرار (اختياري)</label>
-                    <select id="newTaskRecurring" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none">
-                        <option value="none">لا تكرار</option>
-                        <option value="daily">يومي</option>
-                        <option value="weekly">أسبوعي</option>
-                        <option value="monthly">شهري</option>
+                    <label class="text-xs font-bold uppercase tracking-widest opacity-50 block mb-2">نوع التكرار</label>
+                    <select id="newTaskRecurring" class="w-full bg-white/10 border border-white/10 rounded-2xl p-4 outline-none appearance-none">
+                        <option value="none" class="bg-indigo-900">بدون تكرار</option>
+                        <option value="daily" class="bg-indigo-900">تكرار يومي</option>
+                        <option value="weekly" class="bg-indigo-900">تكرار أسبوعي</option>
                     </select>
                 </div>
                 
                 <div class="flex gap-3 pt-4">
-                    <button onclick="addCustomTask()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold transition-all">💾 حفظ المهمة</button>
-                    <button onclick="closeTaskModal()" class="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-xl font-bold transition-all">إلغاء</button>
+                    <button onclick="addCustomTask()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-bold shadow-xl shadow-indigo-600/20 transition-all">حفظ المهمة</button>
                 </div>
             </div>
         </div>
     </div>
 
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.6); }
     </style>
 
     <script>
         // Timer Variables
         let timerInterval = null;
         let timerSecondsLeft = 0;
+        let timerTotalInitial = 0;
         let isTimerRunning = false;
         
         // Stopwatch Variables
         let stopwatchInterval = null;
         let stopwatchSeconds = 0;
         let isStopwatchRunning = false;
+        let stopwatchLaps = [];
         
         // Tasks Storage
         let customTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
+        let completedCount = parseInt(localStorage.getItem('astra_completed_count')) || 0;
         
         // Update current time
         function updateCurrentTime() {
             const now = new Date();
-            document.getElementById('currentTime').innerText = now.toLocaleTimeString('ar-EG');
+            const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            document.getElementById('currentTime').innerText = now.toLocaleTimeString('ar-EG', options);
         }
         setInterval(updateCurrentTime, 1000);
         updateCurrentTime();
         
+        // Stats Update
+        function updateStats() {
+            document.getElementById('taskStats').innerText = completedCount;
+            localStorage.setItem('astra_completed_count', completedCount);
+        }
+        updateStats();
+
         // Timer Functions
         function updateTimerDisplay() {
             const hours = Math.floor(timerSecondsLeft / 3600);
             const minutes = Math.floor((timerSecondsLeft % 3600) / 60);
             const seconds = timerSecondsLeft % 60;
-            document.getElementById('timerDisplay').innerHTML = 
+            document.getElementById('timerDisplay').innerText = 
                 `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            // Progress Bar Update
+            if (timerTotalInitial > 0) {
+                const percentage = (timerSecondsLeft / timerTotalInitial) * 100;
+                document.getElementById('timerProgressBar').style.width = `${percentage}%`;
+            }
         }
         
         function setTimerFromInput() {
             const minutes = parseInt(document.getElementById('timerMinutes').value) || 0;
             const seconds = parseInt(document.getElementById('timerSeconds').value) || 0;
             timerSecondsLeft = (minutes * 60) + seconds;
+            timerTotalInitial = timerSecondsLeft;
             updateTimerDisplay();
         }
         
@@ -295,15 +388,18 @@
             
             if (timerSecondsLeft === 0 && (minutes > 0 || seconds > 0)) {
                 timerSecondsLeft = (minutes * 60) + seconds;
+                timerTotalInitial = timerSecondsLeft;
                 updateTimerDisplay();
             }
             
             if (timerSecondsLeft <= 0) {
-                showNotification('⚠️ المؤقت', 'الرجاء إدخال وقت صحيح');
+                showNotification('⚠️ تنبيه', 'الرجاء إدخال وقت صحيح');
                 return;
             }
             
             isTimerRunning = true;
+            document.getElementById('timerStartBtn').innerText = '⏳ جارٍ...';
+            
             timerInterval = setInterval(() => {
                 if (timerSecondsLeft > 0) {
                     timerSecondsLeft--;
@@ -312,12 +408,14 @@
                 
                 if (timerSecondsLeft === 0) {
                     stopTimer();
-                    playSound();
-                    showNotification('⏰ انتهى المؤقت!', 'الوقت المحدد قد انتهى');
+                    playSound('long');
+                    completedCount++;
+                    updateStats();
+                    showNotification('⏰ انتهى الوقت!', 'تم إنجاز المهمة بنجاح');
                     document.getElementById('timerDisplay').classList.add('alert-ring');
                     setTimeout(() => {
                         document.getElementById('timerDisplay').classList.remove('alert-ring');
-                    }, 1500);
+                    }, 5000);
                 }
             }, 1000);
         }
@@ -328,16 +426,19 @@
                 timerInterval = null;
             }
             isTimerRunning = false;
+            document.getElementById('timerStartBtn').innerText = '▶ بدء';
         }
         
         function resetTimer() {
             stopTimer();
             setTimerFromInput();
+            document.getElementById('timerProgressBar').style.width = '0%';
         }
         
         function setQuickTimer(seconds) {
             stopTimer();
             timerSecondsLeft = seconds;
+            timerTotalInitial = seconds;
             updateTimerDisplay();
             document.getElementById('timerMinutes').value = Math.floor(seconds / 60);
             document.getElementById('timerSeconds').value = seconds % 60;
@@ -348,7 +449,7 @@
             const hours = Math.floor(stopwatchSeconds / 3600);
             const minutes = Math.floor((stopwatchSeconds % 3600) / 60);
             const seconds = stopwatchSeconds % 60;
-            document.getElementById('stopwatchDisplay').innerHTML = 
+            document.getElementById('stopwatchDisplay').innerText = 
                 `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
         
@@ -372,48 +473,74 @@
         function resetStopwatch() {
             stopStopwatch();
             stopwatchSeconds = 0;
+            stopwatchLaps = [];
             updateStopwatchDisplay();
+            document.getElementById('lapsContainer').innerHTML = '';
+        }
+
+        function recordLap() {
+            if (!isStopwatchRunning && stopwatchSeconds === 0) return;
+            const lapTime = document.getElementById('stopwatchDisplay').innerText;
+            stopwatchLaps.unshift(lapTime);
+            renderLaps();
+            playSound('short');
+        }
+
+        function renderLaps() {
+            const container = document.getElementById('lapsContainer');
+            container.innerHTML = stopwatchLaps.map((lap, index) => `
+                <div class="lap-item flex justify-between p-2 text-xs opacity-70 hover:opacity-100">
+                    <span>دورة ${stopwatchLaps.length - index}</span>
+                    <span class="font-mono">${lap}</span>
+                </div>
+            `).join('');
         }
         
-        // Sound & Notification
-        function playSound() {
+        // Advanced Sound System
+        function playSound(type = 'short') {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const oscillator = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 oscillator.connect(gain);
                 gain.connect(audioCtx.destination);
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 880;
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.5);
-            } catch(e) {
-                console.log('Audio not supported');
-            }
+                
+                if (type === 'short') {
+                    oscillator.type = 'sine';
+                    oscillator.frequency.value = 660;
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.2);
+                } else {
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.5);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 1);
+                }
+            } catch(e) { console.warn('Audio blocked by browser policy'); }
         }
         
         function showNotification(title, body) {
             if (Notification.permission === 'granted') {
-                new Notification(title, { body: body, icon: 'https://via.placeholder.com/64' });
+                new Notification(title, { body: body });
             } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(title, { body: body });
-                    }
-                });
+                Notification.requestPermission();
             }
         }
         
-        // Task Functions
+        // Improved Task Management
         function startTaskWithTime(seconds, taskName) {
             stopTimer();
             timerSecondsLeft = seconds;
+            timerTotalInitial = seconds;
             updateTimerDisplay();
             document.getElementById('timerMinutes').value = Math.floor(seconds / 60);
             document.getElementById('timerSeconds').value = seconds % 60;
             startTimer();
-            showNotification('🎯 بدء المهمة', `بدء: ${taskName} - ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
         function addCustomTask() {
@@ -422,16 +549,10 @@
             const seconds = parseInt(document.getElementById('newTaskSeconds').value) || 0;
             const recurring = document.getElementById('newTaskRecurring').value;
             
-            if (!name) {
-                alert('❌ الرجاء إدخال اسم المهمة');
-                return;
-            }
+            if (!name) { alert('❌ يرجى تسمية المهمة'); return; }
             
             const totalSeconds = (minutes * 60) + seconds;
-            if (totalSeconds <= 0) {
-                alert('❌ يجب إدخال وقت أكبر من صفر للمهمة');
-                return;
-            }
+            if (totalSeconds <= 0) { alert('❌ الوقت غير كافٍ'); return; }
             
             const newTask = {
                 id: Date.now(),
@@ -441,19 +562,15 @@
                 createdAt: new Date().toISOString()
             };
             
-            customTasks.push(newTask);
+            customTasks.unshift(newTask);
             localStorage.setItem('astra_clock_tasks', JSON.stringify(customTasks));
             renderTasksList();
             closeTaskModal();
-            
-            // Reset form
-            document.getElementById('newTaskName').value = '';
-            document.getElementById('newTaskMinutes').value = '1';
-            document.getElementById('newTaskSeconds').value = '0';
-            document.getElementById('newTaskRecurring').value = 'none';
+            playSound('short');
         }
         
-        function deleteCustomTask(taskId) {
+        function deleteCustomTask(taskId, event) {
+            event.stopPropagation();
             customTasks = customTasks.filter(t => t.id !== taskId);
             localStorage.setItem('astra_clock_tasks', JSON.stringify(customTasks));
             renderTasksList();
@@ -473,87 +590,52 @@
             container.innerHTML = customTasks.map(task => {
                 const minutes = Math.floor(task.seconds / 60);
                 const seconds = task.seconds % 60;
-                const recurringText = {
-                    'daily': '📅 يومي',
-                    'weekly': '📆 أسبوعي',
-                    'monthly': '🗓️ شهري',
-                    'none': ''
-                }[task.recurring] || '';
                 
                 return `
-                    <div class="task-item p-4 rounded-xl flex items-center justify-between">
-                        <div class="flex-1 cursor-pointer" onclick="startTaskWithTime(${task.seconds}, '${task.name.replace(/'/g, "\\'")}')">
-                            <div class="flex items-center gap-3 flex-wrap">
-                                <span class="font-bold">${task.name}</span>
-                                <span class="text-xs opacity-60">⏱️ ${minutes}:${String(seconds).padStart(2,'0')}</span>
-                                ${recurringText ? `<span class="recurring-badge">${recurringText}</span>` : ''}
-                            </div>
+                    <div class="task-item p-5 rounded-2xl flex flex-col gap-3" onclick="startTaskWithTime(${task.seconds}, '${task.name}')">
+                        <div class="flex justify-between items-start">
+                            <span class="font-bold text-lg">${task.name}</span>
+                            <button onclick="deleteCustomTask(${task.id}, event)" class="text-white/20 hover:text-red-400 p-1">✕</button>
                         </div>
-                        <button onclick="deleteCustomTask(${task.id})" class="text-white/30 hover:text-red-400 transition-all p-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-mono bg-white/5 px-2 py-1 rounded-lg">${minutes}:${String(seconds).padStart(2,'0')}</span>
+                            ${task.recurring !== 'none' ? `<span class="recurring-badge">🔄 تكرار</span>` : ''}
+                            <span class="text-[10px] opacity-30">انقر للبدء</span>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
         
         function openAddTaskModal() {
-            document.getElementById('taskModal').classList.remove('hidden');
-            document.getElementById('taskModal').style.display = 'flex';
+            const modal = document.getElementById('taskModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
         }
         
         function closeTaskModal(event) {
             if (event && event.target !== event.currentTarget) return;
-            document.getElementById('taskModal').classList.add('hidden');
             document.getElementById('taskModal').style.display = 'none';
         }
         
-        // Apply theme from main app if exists
+        // Theme Integration
         function applyTheme() {
             const themeData = localStorage.getItem('astra_theme_data');
             if (themeData) {
                 const theme = JSON.parse(themeData);
-                document.documentElement.style.setProperty('--primary-color', theme.accent);
-                if (theme.background) document.body.style.background = theme.background;
+                if (theme.accent) document.documentElement.style.setProperty('--primary-color', theme.accent);
             }
         }
         
-        // Check recurring tasks on load
-        function checkRecurringTasks() {
-            const lastCheck = localStorage.getItem('astra_clock_last_check');
-            const today = new Date().toDateString();
-            
-            if (lastCheck !== today) {
-                const allTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
-                let modified = false;
-                
-                allTasks.forEach(task => {
-                    if (task.recurring !== 'none') {
-                        modified = true;
-                    }
-                });
-                
-                if (modified) {
-                    renderTasksList();
-                }
-                localStorage.setItem('astra_clock_last_check', today);
-            }
-        }
-        
-        // Request notification permission on load
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-        
-        // Initialize
+        // Initialization
         applyTheme();
         renderTasksList();
-        checkRecurringTasks();
         setTimerFromInput();
         
-        // Keyboard shortcuts
+        // Permission Check
+        if (Notification.permission === 'default') Notification.requestPermission();
+
+        // Escape key to close modal
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeTaskModal();
         });
