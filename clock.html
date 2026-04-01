@@ -26,11 +26,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
         @keyframes ring {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -125,7 +120,7 @@
             top: 100%;
             left: 0;
             margin-top: 0.75rem;
-            width: 320px;
+            width: 340px;
             background: rgba(15, 15, 25, 0.95);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -163,10 +158,10 @@
         }
         
         .theme-name {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             text-align: center;
             margin-top: 0.25rem;
-            opacity: 0.7;
+            opacity: 0.8;
         }
         
         .dropdown-header {
@@ -176,6 +171,12 @@
             text-align: center;
             letter-spacing: 1px;
         }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        
+        .hidden { display: none; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -197,7 +198,7 @@
                     </svg>
                 </button>
                 
-                <!-- Theme Dropdown - Glass Style -->
+                <!-- Theme Dropdown -->
                 <div id="themeDropdown" class="theme-dropdown">
                     <div class="dropdown-header">🎨 اختر ثيمك المفضل</div>
                     <div class="theme-grid" id="themeGrid"></div>
@@ -240,10 +241,10 @@
                 
                 <div class="text-center mb-6">
                     <div id="timerDisplay" class="timer-display text-6xl md:text-7xl mb-4">00:00:00</div>
-                    <div class="flex justify-center gap-3">
+                    <div class="flex justify-center gap-3 flex-wrap">
                         <input type="number" id="timerMinutes" placeholder="دقائق" class="time-input w-28" value="0" min="0">
                         <input type="number" id="timerSeconds" placeholder="ثواني" class="time-input w-28" value="0" min="0" max="59">
-                        <button onclick="startTimer()" id="timerStartBtn" class="btn-action px-6 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 transition-all">▶ بدء</button>
+                        <button onclick="startTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 transition-all">▶ بدء</button>
                         <button onclick="stopTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-red-600/50 hover:bg-red-600 transition-all">⏸ إيقاف</button>
                         <button onclick="resetTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20 transition-all">↺ إعادة</button>
                     </div>
@@ -345,25 +346,23 @@
         </div>
     </div>
 
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-    </style>
-
     <script>
-        // Timer Variables
+        // ========== DOM Elements ==========
         let timerInterval = null;
         let timerSecondsLeft = 0;
         let isTimerRunning = false;
         
-        // Stopwatch Variables
         let stopwatchInterval = null;
         let stopwatchSeconds = 0;
         let isStopwatchRunning = false;
         
-        // Tasks Storage
-        let customTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
+        let customTasks = [];
+        
+        // Load tasks from localStorage
+        try {
+            const saved = localStorage.getItem('astra_clock_tasks');
+            if (saved) customTasks = JSON.parse(saved);
+        } catch(e) { console.log('Error loading tasks'); }
         
         // ========== 20 Themes ==========
         const themes = [
@@ -394,6 +393,7 @@
             const grid = document.getElementById('themeGrid');
             if (!grid) return;
             
+            grid.innerHTML = '';
             themes.forEach(theme => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'text-center';
@@ -426,20 +426,6 @@
             
             const titleElement = document.querySelector('h1');
             if (titleElement) titleElement.style.color = theme.accent;
-            
-            const timerDisplay = document.getElementById('timerDisplay');
-            if (timerDisplay) {
-                timerDisplay.style.background = `linear-gradient(135deg, #fff, ${theme.accent})`;
-                timerDisplay.style.webkitBackgroundClip = 'text';
-                timerDisplay.style.backgroundClip = 'text';
-            }
-            
-            const stopwatchDisplay = document.getElementById('stopwatchDisplay');
-            if (stopwatchDisplay) {
-                stopwatchDisplay.style.background = `linear-gradient(135deg, #fff, ${theme.accent})`;
-                stopwatchDisplay.style.webkitBackgroundClip = 'text';
-                stopwatchDisplay.style.backgroundClip = 'text';
-            }
         }
         
         // Load saved theme
@@ -470,21 +456,22 @@
             }
         });
         
-        // Update current time
+        // ========== Current Time ==========
         function updateCurrentTime() {
             const now = new Date();
-            document.getElementById('currentTime').innerText = now.toLocaleTimeString('ar-EG');
+            const timeEl = document.getElementById('currentTime');
+            if (timeEl) timeEl.innerText = now.toLocaleTimeString('ar-EG');
         }
         setInterval(updateCurrentTime, 1000);
         updateCurrentTime();
         
-        // Timer Functions
+        // ========== Timer Functions ==========
         function updateTimerDisplay() {
             const hours = Math.floor(timerSecondsLeft / 3600);
             const minutes = Math.floor((timerSecondsLeft % 3600) / 60);
             const seconds = timerSecondsLeft % 60;
-            document.getElementById('timerDisplay').innerHTML = 
-                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const display = document.getElementById('timerDisplay');
+            if (display) display.innerHTML = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
         
         function setTimerFromInput() {
@@ -523,9 +510,10 @@
                     if (Notification.permission === 'granted') {
                         new Notification('⏰ انتهى المؤقت!', { body: 'الوقت المحدد قد انتهى' });
                     }
-                    document.getElementById('timerDisplay').classList.add('alert-ring');
+                    const display = document.getElementById('timerDisplay');
+                    if (display) display.classList.add('alert-ring');
                     setTimeout(() => {
-                        document.getElementById('timerDisplay').classList.remove('alert-ring');
+                        if (display) display.classList.remove('alert-ring');
                     }, 1500);
                 }
             }, 1000);
@@ -548,17 +536,19 @@
             stopTimer();
             timerSecondsLeft = seconds;
             updateTimerDisplay();
-            document.getElementById('timerMinutes').value = Math.floor(seconds / 60);
-            document.getElementById('timerSeconds').value = seconds % 60;
+            const minutesInput = document.getElementById('timerMinutes');
+            const secondsInput = document.getElementById('timerSeconds');
+            if (minutesInput) minutesInput.value = Math.floor(seconds / 60);
+            if (secondsInput) secondsInput.value = seconds % 60;
         }
         
-        // Stopwatch Functions
+        // ========== Stopwatch Functions ==========
         function updateStopwatchDisplay() {
             const hours = Math.floor(stopwatchSeconds / 3600);
             const minutes = Math.floor((stopwatchSeconds % 3600) / 60);
             const seconds = stopwatchSeconds % 60;
-            document.getElementById('stopwatchDisplay').innerHTML = 
-                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const display = document.getElementById('stopwatchDisplay');
+            if (display) display.innerHTML = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
         
         function startStopwatch() {
@@ -584,7 +574,7 @@
             updateStopwatchDisplay();
         }
         
-        // Sound & Notification
+        // ========== Sound ==========
         function playSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -602,14 +592,58 @@
             }
         }
         
-        // Task Functions
+        // ========== Task Functions ==========
         function startTaskWithTime(seconds, taskName) {
             stopTimer();
             timerSecondsLeft = seconds;
             updateTimerDisplay();
-            document.getElementById('timerMinutes').value = Math.floor(seconds / 60);
-            document.getElementById('timerSeconds').value = seconds % 60;
+            const minutesInput = document.getElementById('timerMinutes');
+            const secondsInput = document.getElementById('timerSeconds');
+            if (minutesInput) minutesInput.value = Math.floor(seconds / 60);
+            if (secondsInput) secondsInput.value = seconds % 60;
             startTimer();
+        }
+        
+        function renderTasksList() {
+            const container = document.getElementById('tasksList');
+            const noTasksDiv = document.getElementById('noTasks');
+            
+            if (!container) return;
+            
+            if (customTasks.length === 0) {
+                container.innerHTML = '';
+                if (noTasksDiv) noTasksDiv.classList.remove('hidden');
+                return;
+            }
+            
+            if (noTasksDiv) noTasksDiv.classList.add('hidden');
+            container.innerHTML = customTasks.map(task => {
+                const minutes = Math.floor(task.seconds / 60);
+                const seconds = task.seconds % 60;
+                const recurringText = {
+                    'daily': '📅 يومي',
+                    'weekly': '📆 أسبوعي',
+                    'monthly': '🗓️ شهري',
+                    'none': ''
+                }[task.recurring] || '';
+                
+                return `
+                    <div class="task-item p-4 rounded-xl flex items-center justify-between">
+                        <div class="flex-1 cursor-pointer" onclick="startTaskWithTime(${task.seconds}, '${task.name.replace(/'/g, "\\'")}')">
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <span class="font-bold">${task.name}</span>
+                                <span class="text-xs opacity-60">⏱️ ${minutes}:${String(seconds).padStart(2,'0')}</span>
+                                ${recurringText ? `<span class="recurring-badge">${recurringText}</span>` : ''}
+                            </div>
+                        </div>
+                        <button onclick="deleteCustomTask(${task.id})" class="text-white/30 hover:text-red-400 transition-all p-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
         }
         
         function addCustomTask() {
@@ -642,7 +676,6 @@
             renderTasksList();
             closeTaskModal();
             
-            // Reset form
             document.getElementById('newTaskName').value = '';
             document.getElementById('newTaskMinutes').value = '1';
             document.getElementById('newTaskSeconds').value = '0';
@@ -655,36 +688,5 @@
             renderTasksList();
         }
         
-        function renderTasksList() {
-            const container = document.getElementById('tasksList');
-            const noTasksDiv = document.getElementById('noTasks');
-            
-            if (customTasks.length === 0) {
-                container.innerHTML = '';
-                noTasksDiv.classList.remove('hidden');
-                return;
-            }
-            
-            noTasksDiv.classList.add('hidden');
-            container.innerHTML = customTasks.map(task => {
-                const minutes = Math.floor(task.seconds / 60);
-                const seconds = task.seconds % 60;
-                const recurringText = {
-                    'daily': '📅 يومي',
-                    'weekly': '📆 أسبوعي',
-                    'monthly': '🗓️ شهري',
-                    'none': ''
-                }[task.recurring] || '';
-                
-                return `
-                    <div class="task-item p-4 rounded-xl flex items-center justify-between">
-                        <div class="flex-1 cursor-pointer" onclick="startTaskWithTime(${task.seconds}, '${task.name.replace(/'/g, "\\'")}')">
-                            <div class="flex items-center gap-3 flex-wrap">
-                                <span class="font-bold">${task.name}</span>
-                                <span class="text-xs opacity-60">⏱️ ${minutes}:${String(seconds).padStart(2,'0')}</span>
-                                ${recurringText ? `<span class="recurring-badge">${recurringText}</span>` : ''}
-                            </div>
-                        </div>
-                        <button onclick="deleteCustomTask(${task.id})" class="text-white/30 hover:text-red-400 transition-all p-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-
+        function openAddTaskModal() {
+            const modal
