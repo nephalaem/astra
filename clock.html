@@ -21,9 +21,9 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         @keyframes ring {
@@ -109,18 +109,113 @@
         .alert-ring {
             animation: ring 0.5s ease-in-out 3;
         }
+
+        /* Toast Notification Style */
+        .toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 2rem;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out forwards;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .toast-notification.error {
+            border-right: 4px solid #ef4444;
+        }
+        .toast-notification.success {
+            border-right: 4px solid #10b981;
+        }
+        .toast-notification.warning {
+            border-right: 4px solid #f59e0b;
+        }
+        
+        /* Theme Dropdown */
+        .theme-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 0.5rem;
+            width: 280px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            padding: 1rem;
+            z-index: 100;
+            display: none;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        .theme-dropdown.show {
+            display: grid;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .theme-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .theme-option:hover {
+            transform: scale(1.05);
+            border-color: white;
+        }
+        
+        /* Stop Timer Button */
+        .stop-alarm-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #ef4444;
+            padding: 1rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            z-index: 1000;
+            animation: pulse 1s infinite;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <!-- Header -->
     <header class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-6 relative">
             <button onclick="window.history.back()" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group">
                 <svg class="w-6 h-6 text-indigo-400 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
             </button>
+            
+            <!-- Theme Button with Dropdown -->
+            <div class="relative">
+                <button onclick="toggleThemeDropdown()" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group">
+                    <svg class="w-6 h-6 text-indigo-400 group-hover:rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                    </svg>
+                </button>
+                <div id="themeDropdown" class="theme-dropdown"></div>
+            </div>
+            
             <div>
                 <h1 class="text-4xl font-black tracking-tight" style="color: var(--primary-color);">ASTRA CLOCK</h1>
                 <p class="text-[10px] opacity-40 tracking-[0.2em] font-bold uppercase mt-1">Timer & Stopwatch</p>
@@ -157,7 +252,7 @@
                 
                 <div class="text-center mb-6">
                     <div id="timerDisplay" class="timer-display text-6xl md:text-7xl mb-4">00:00:00</div>
-                    <div class="flex justify-center gap-3">
+                    <div class="flex justify-center gap-3 flex-wrap">
                         <input type="number" id="timerMinutes" placeholder="دقائق" class="time-input w-28" value="0" min="0">
                         <input type="number" id="timerSeconds" placeholder="ثواني" class="time-input w-28" value="0" min="0" max="59">
                         <button onclick="startTimer()" id="timerStartBtn" class="btn-action px-6 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 transition-all">▶ بدء</button>
@@ -262,6 +357,11 @@
         </div>
     </div>
 
+    <!-- Stop Alarm Button (appears when timer ends) -->
+    <div id="stopAlarmBtn" class="stop-alarm-btn hidden" onclick="stopAlarmSound()">
+        ⏹️ إيقاف التنبيه
+    </div>
+
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -279,8 +379,152 @@
         let stopwatchSeconds = 0;
         let isStopwatchRunning = false;
         
+        // Sound Variables
+        let alarmAudioContext = null;
+        let alarmOscillator = null;
+        let alarmGain = null;
+        let isAlarmPlaying = false;
+        
         // Tasks Storage
         let customTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
+        
+        // ========== Toast Notification Function ==========
+        function showToast(message, type = 'warning') {
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            const icons = {
+                error: '❌',
+                success: '✅',
+                warning: '⚠️'
+            };
+            toast.innerHTML = `${icons[type] || 'ℹ️'} ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // ========== Theme Functions ==========
+        const themes = [
+            { bg: 'radial-gradient(circle at top right, #1e1b4b, #000)', accent: '#6366f1', name: 'بنفسجي' },
+            { bg: 'radial-gradient(circle at top right, #0f172a, #000)', accent: '#38bdf8', name: 'أزرق' },
+            { bg: 'radial-gradient(circle at top right, #064e3b, #000)', accent: '#34d399', name: 'زيتي' },
+            { bg: 'radial-gradient(circle at top right, #451a03, #000)', accent: '#fbbf24', name: 'ذهبي' },
+            { bg: 'radial-gradient(circle at top right, #4c0519, #000)', accent: '#fb7185', name: 'وردي' },
+            { bg: 'radial-gradient(circle at top right, #1e1e1e, #000)', accent: '#ffffff', name: 'أبيض' },
+            { bg: 'radial-gradient(circle at top right, #2e1065, #000)', accent: '#a78bfa', name: 'بنفسجي فاتح' },
+            { bg: 'radial-gradient(circle at top right, #0c4a6e, #000)', accent: '#7dd3fc', name: 'سماوي' },
+            { bg: 'radial-gradient(circle at top right, #3f6212, #000)', accent: '#a3e635', name: 'ليموني' },
+            { bg: 'radial-gradient(circle at top right, #7c2d12, #000)', accent: '#fb923c', name: 'برتقالي' },
+            { bg: 'radial-gradient(circle at top right, #134e4a, #000)', accent: '#2dd4bf', name: 'فيروزي' },
+            { bg: 'radial-gradient(circle at top right, #581c87, #000)', accent: '#d8b4fe', name: 'لافندر' },
+            { bg: 'radial-gradient(circle at top right, #831843, #000)', accent: '#f472b6', name: 'زهري' },
+            { bg: 'radial-gradient(circle at top right, #0f172a, #334155)', accent: '#94a3b8', name: 'رمادي' },
+            { bg: 'radial-gradient(circle at top right, #1e1b4b, #4338ca)', accent: '#818cf8', name: 'نيلي' },
+            { bg: 'radial-gradient(circle at top right, #2b2d42, #1e1b4b)', accent: '#8d99ae', name: 'فضي' },
+            { bg: 'radial-gradient(circle at top right, #6d28d9, #4c1d95)', accent: '#c084fc', name: 'أرجواني' },
+            { bg: 'radial-gradient(circle at top right, #b91c1c, #7f1a1a)', accent: '#f87171', name: 'أحمر' },
+            { bg: 'radial-gradient(circle at top right, #0f172a, #1e293b)', accent: '#60a5fa', name: 'أزرق داكن' },
+            { bg: 'radial-gradient(circle at top right, #2dd4bf, #0d9488)', accent: '#f0fdfa', name: 'نعناعي' }
+        ];
+        
+        function initThemeDropdown() {
+            const grid = document.getElementById('themeDropdown');
+            grid.innerHTML = '';
+            themes.forEach(theme => {
+                const dot = document.createElement('div');
+                dot.className = 'theme-option';
+                dot.style.background = theme.bg;
+                dot.title = theme.name;
+                dot.onclick = (e) => {
+                    e.stopPropagation();
+                    applyTheme(theme);
+                    showToast(`تم تطبيق ثيم ${theme.name}`, 'success');
+                    document.getElementById('themeDropdown').classList.remove('show');
+                };
+                grid.appendChild(dot);
+            });
+        }
+        
+        function toggleThemeDropdown() {
+            const dropdown = document.getElementById('themeDropdown');
+            dropdown.classList.toggle('show');
+        }
+        
+        function applyTheme(theme) {
+            document.body.style.background = theme.bg;
+            document.documentElement.style.setProperty('--primary-color', theme.accent);
+            localStorage.setItem('astra_clock_theme', JSON.stringify(theme));
+            const titleElement = document.querySelector('h1');
+            if (titleElement) titleElement.style.color = theme.accent;
+        }
+        
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('astra_clock_theme');
+            if (savedTheme) {
+                const theme = JSON.parse(savedTheme);
+                applyTheme(theme);
+            }
+        }
+        
+        // ========== Alarm Sound (Nature-like, continuous) ==========
+        function startAlarmSound() {
+            if (isAlarmPlaying) return;
+            
+            try {
+                alarmAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                alarmGain = alarmAudioContext.createGain();
+                alarmGain.connect(alarmAudioContext.destination);
+                alarmGain.gain.value = 0.3;
+                
+                function playBeep() {
+                    if (!isAlarmPlaying) return;
+                    
+                    const osc = alarmAudioContext.createOscillator();
+                    osc.connect(alarmGain);
+                    osc.type = 'sine';
+                    osc.frequency.value = 523.25;
+                    osc.start();
+                    osc.stop(alarmAudioContext.currentTime + 0.3);
+                    
+                    setTimeout(() => {
+                        if (isAlarmPlaying) {
+                            const osc2 = alarmAudioContext.createOscillator();
+                            osc2.connect(alarmGain);
+                            osc2.type = 'sine';
+                            osc2.frequency.value = 659.25;
+                            osc2.start();
+                            osc2.stop(alarmAudioContext.currentTime + 0.3);
+                        }
+                    }, 300);
+                    
+                    setTimeout(() => {
+                        if (isAlarmPlaying) playBeep();
+                    }, 800);
+                }
+                
+                isAlarmPlaying = true;
+                playBeep();
+                document.getElementById('stopAlarmBtn').classList.remove('hidden');
+                showToast('⏰ انتهى المؤقت! اضغط على زر الإيقاف', 'warning');
+            } catch(e) {
+                console.log('Audio not supported');
+            }
+        }
+        
+        function stopAlarmSound() {
+            isAlarmPlaying = false;
+            if (alarmAudioContext) {
+                alarmAudioContext.close();
+                alarmAudioContext = null;
+            }
+            document.getElementById('stopAlarmBtn').classList.add('hidden');
+            showToast('تم إيقاف التنبيه', 'success');
+        }
         
         // Update current time
         function updateCurrentTime() {
@@ -318,7 +562,7 @@
             }
             
             if (timerSecondsLeft <= 0) {
-                showNotification('⚠️ المؤقت', 'الرجاء إدخال وقت صحيح');
+                showToast('الرجاء إدخال وقت صحيح', 'error');
                 return;
             }
             
@@ -331,7 +575,7 @@
                 
                 if (timerSecondsLeft === 0) {
                     stopTimer();
-                    playSound();
+                    startAlarmSound();
                     showNotification('⏰ انتهى المؤقت!', 'الوقت المحدد قد انتهى');
                     document.getElementById('timerDisplay').classList.add('alert-ring');
                     setTimeout(() => {
@@ -394,33 +638,12 @@
             updateStopwatchDisplay();
         }
         
-        // Sound & Notification
-        function playSound() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                oscillator.connect(gain);
-                gain.connect(audioCtx.destination);
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 880;
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.5);
-            } catch(e) {
-                console.log('Audio not supported');
-            }
-        }
-        
+        // Notification
         function showNotification(title, body) {
             if (Notification.permission === 'granted') {
-                new Notification(title, { body: body, icon: 'https://via.placeholder.com/64' });
+                new Notification(title, { body: body });
             } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(title, { body: body });
-                    }
-                });
+                Notification.requestPermission();
             }
         }
         
@@ -432,7 +655,7 @@
             document.getElementById('timerMinutes').value = Math.floor(seconds / 60);
             document.getElementById('timerSeconds').value = seconds % 60;
             startTimer();
-            showNotification('🎯 بدء المهمة', `بدء: ${taskName} - ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`);
+            showToast(`بدء: ${taskName}`, 'success');
         }
         
         function addCustomTask() {
@@ -442,13 +665,13 @@
             const recurring = document.getElementById('newTaskRecurring').value;
             
             if (!name) {
-                alert('❌ الرجاء إدخال اسم المهمة');
+                showToast('الرجاء إدخال اسم المهمة', 'error');
                 return;
             }
             
             const totalSeconds = (minutes * 60) + seconds;
             if (totalSeconds <= 0) {
-                alert('❌ يجب إدخال وقت أكبر من صفر للمهمة');
+                showToast('يجب إدخال وقت أكبر من صفر للمهمة', 'error');
                 return;
             }
             
@@ -464,6 +687,7 @@
             localStorage.setItem('astra_clock_tasks', JSON.stringify(customTasks));
             renderTasksList();
             closeTaskModal();
+            showToast(`تمت إضافة "${name}" بنجاح`, 'success');
             
             // Reset form
             document.getElementById('newTaskName').value = '';
@@ -473,112 +697,7 @@
         }
         
         function deleteCustomTask(taskId) {
+            const task = customTasks.find(t => t.id === taskId);
             customTasks = customTasks.filter(t => t.id !== taskId);
             localStorage.setItem('astra_clock_tasks', JSON.stringify(customTasks));
             renderTasksList();
-        }
-        
-        function renderTasksList() {
-            const container = document.getElementById('tasksList');
-            const noTasksDiv = document.getElementById('noTasks');
-            
-            if (customTasks.length === 0) {
-                container.innerHTML = '';
-                noTasksDiv.classList.remove('hidden');
-                return;
-            }
-            
-            noTasksDiv.classList.add('hidden');
-            container.innerHTML = customTasks.map(task => {
-                const minutes = Math.floor(task.seconds / 60);
-                const seconds = task.seconds % 60;
-                const recurringText = {
-                    'daily': '📅 يومي',
-                    'weekly': '📆 أسبوعي',
-                    'monthly': '🗓️ شهري',
-                    'none': ''
-                }[task.recurring] || '';
-                
-                return `
-                    <div class="task-item p-4 rounded-xl flex items-center justify-between">
-                        <div class="flex-1 cursor-pointer" onclick="startTaskWithTime(${task.seconds}, '${task.name.replace(/'/g, "\\'")}')">
-                            <div class="flex items-center gap-3 flex-wrap">
-                                <span class="font-bold">${task.name}</span>
-                                <span class="text-xs opacity-60">⏱️ ${minutes}:${String(seconds).padStart(2,'0')}</span>
-                                ${recurringText ? `<span class="recurring-badge">${recurringText}</span>` : ''}
-                            </div>
-                        </div>
-                        <button onclick="deleteCustomTask(${task.id})" class="text-white/30 hover:text-red-400 transition-all p-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        function openAddTaskModal() {
-            document.getElementById('taskModal').classList.remove('hidden');
-            document.getElementById('taskModal').style.display = 'flex';
-        }
-        
-        function closeTaskModal(event) {
-            if (event && event.target !== event.currentTarget) return;
-            document.getElementById('taskModal').classList.add('hidden');
-            document.getElementById('taskModal').style.display = 'none';
-        }
-        
-        // Apply theme from main app if exists
-        function applyTheme() {
-            const themeData = localStorage.getItem('astra_theme_data');
-            if (themeData) {
-                const theme = JSON.parse(themeData);
-                document.documentElement.style.setProperty('--primary-color', theme.accent);
-                if (theme.background) document.body.style.background = theme.background;
-            }
-        }
-        
-        // Check recurring tasks on load
-        function checkRecurringTasks() {
-            const lastCheck = localStorage.getItem('astra_clock_last_check');
-            const today = new Date().toDateString();
-            
-            if (lastCheck !== today) {
-                // Check for recurring tasks to add back
-                const allTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
-                let modified = false;
-                
-                allTasks.forEach(task => {
-                    if (task.recurring !== 'none') {
-                        // We don't auto-add, just keep them in list
-                        // They remain available for reuse
-                        modified = true;
-                    }
-                });
-                
-                if (modified) {
-                    renderTasksList();
-                }
-                localStorage.setItem('astra_clock_last_check', today);
-            }
-        }
-        
-        // Request notification permission on load
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-        
-        // Initialize
-        applyTheme();
-        renderTasksList();
-        checkRecurringTasks();
-        setTimerFromInput();
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeTaskModal();
-        });
-    </script>
-</body>
-</html>
