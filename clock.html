@@ -193,6 +193,14 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
         }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -255,7 +263,7 @@
                     <div class="flex justify-center gap-3 flex-wrap">
                         <input type="number" id="timerMinutes" placeholder="دقائق" class="time-input w-28" value="0" min="0">
                         <input type="number" id="timerSeconds" placeholder="ثواني" class="time-input w-28" value="0" min="0" max="59">
-                        <button onclick="startTimer()" id="timerStartBtn" class="btn-action px-6 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 transition-all">▶ بدء</button>
+                        <button onclick="startTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 transition-all">▶ بدء</button>
                         <button onclick="stopTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-red-600/50 hover:bg-red-600 transition-all">⏸ إيقاف</button>
                         <button onclick="resetTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20 transition-all">↺ إعادة</button>
                     </div>
@@ -362,53 +370,41 @@
         ⏹️ إيقاف التنبيه
     </div>
 
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-    </style>
-
     <script>
-        // Timer Variables
+        // ========== DOM Elements ==========
         let timerInterval = null;
         let timerSecondsLeft = 0;
         let isTimerRunning = false;
         
-        // Stopwatch Variables
         let stopwatchInterval = null;
         let stopwatchSeconds = 0;
         let isStopwatchRunning = false;
         
-        // Sound Variables
         let alarmAudioContext = null;
-        let alarmOscillator = null;
-        let alarmGain = null;
         let isAlarmPlaying = false;
         
-        // Tasks Storage
-        let customTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
+        let customTasks = [];
         
-        // ========== Toast Notification Function ==========
+        // Load tasks from localStorage
+        try {
+            const saved = localStorage.getItem('astra_clock_tasks');
+            if (saved) customTasks = JSON.parse(saved);
+        } catch(e) { console.log('Error loading tasks'); }
+        
+        // ========== Toast Notification ==========
         function showToast(message, type = 'warning') {
-            const existingToast = document.querySelector('.toast-notification');
-            if (existingToast) existingToast.remove();
+            const existing = document.querySelector('.toast-notification');
+            if (existing) existing.remove();
             
             const toast = document.createElement('div');
             toast.className = `toast-notification ${type}`;
-            const icons = {
-                error: '❌',
-                success: '✅',
-                warning: '⚠️'
-            };
+            const icons = { error: '❌', success: '✅', warning: '⚠️', info: 'ℹ️' };
             toast.innerHTML = `${icons[type] || 'ℹ️'} ${message}`;
             document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
+            setTimeout(() => toast.remove(), 3000);
         }
         
-        // ========== Theme Functions ==========
+        // ========== Themes ==========
         const themes = [
             { bg: 'radial-gradient(circle at top right, #1e1b4b, #000)', accent: '#6366f1', name: 'بنفسجي' },
             { bg: 'radial-gradient(circle at top right, #0f172a, #000)', accent: '#38bdf8', name: 'أزرق' },
@@ -434,6 +430,7 @@
         
         function initThemeDropdown() {
             const grid = document.getElementById('themeDropdown');
+            if (!grid) return;
             grid.innerHTML = '';
             themes.forEach(theme => {
                 const dot = document.createElement('div');
@@ -452,7 +449,7 @@
         
         function toggleThemeDropdown() {
             const dropdown = document.getElementById('themeDropdown');
-            dropdown.classList.toggle('show');
+            if (dropdown) dropdown.classList.toggle('show');
         }
         
         function applyTheme(theme) {
@@ -464,44 +461,43 @@
         }
         
         function loadSavedTheme() {
-            const savedTheme = localStorage.getItem('astra_clock_theme');
-            if (savedTheme) {
-                const theme = JSON.parse(savedTheme);
-                applyTheme(theme);
+            const saved = localStorage.getItem('astra_clock_theme');
+            if (saved) {
+                try {
+                    const theme = JSON.parse(saved);
+                    applyTheme(theme);
+                } catch(e) {}
             }
         }
         
-        // ========== Alarm Sound (Nature-like, continuous) ==========
+        // ========== Alarm Sound ==========
         function startAlarmSound() {
             if (isAlarmPlaying) return;
             
             try {
                 alarmAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-                alarmGain = alarmAudioContext.createGain();
-                alarmGain.connect(alarmAudioContext.destination);
-                alarmGain.gain.value = 0.3;
+                const gain = alarmAudioContext.createGain();
+                gain.connect(alarmAudioContext.destination);
+                gain.gain.value = 0.3;
                 
                 function playBeep() {
                     if (!isAlarmPlaying) return;
-                    
                     const osc = alarmAudioContext.createOscillator();
-                    osc.connect(alarmGain);
+                    osc.connect(gain);
                     osc.type = 'sine';
                     osc.frequency.value = 523.25;
                     osc.start();
                     osc.stop(alarmAudioContext.currentTime + 0.3);
-                    
                     setTimeout(() => {
                         if (isAlarmPlaying) {
                             const osc2 = alarmAudioContext.createOscillator();
-                            osc2.connect(alarmGain);
+                            osc2.connect(gain);
                             osc2.type = 'sine';
                             osc2.frequency.value = 659.25;
                             osc2.start();
                             osc2.stop(alarmAudioContext.currentTime + 0.3);
                         }
                     }, 300);
-                    
                     setTimeout(() => {
                         if (isAlarmPlaying) playBeep();
                     }, 800);
@@ -526,21 +522,22 @@
             showToast('تم إيقاف التنبيه', 'success');
         }
         
-        // Update current time
+        // ========== Current Time ==========
         function updateCurrentTime() {
             const now = new Date();
-            document.getElementById('currentTime').innerText = now.toLocaleTimeString('ar-EG');
+            const timeEl = document.getElementById('currentTime');
+            if (timeEl) timeEl.innerText = now.toLocaleTimeString('ar-EG');
         }
         setInterval(updateCurrentTime, 1000);
         updateCurrentTime();
         
-        // Timer Functions
+        // ========== Timer Functions ==========
         function updateTimerDisplay() {
             const hours = Math.floor(timerSecondsLeft / 3600);
             const minutes = Math.floor((timerSecondsLeft % 3600) / 60);
             const seconds = timerSecondsLeft % 60;
-            document.getElementById('timerDisplay').innerHTML = 
-                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const display = document.getElementById('timerDisplay');
+            if (display) display.innerHTML = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
         
         function setTimerFromInput() {
@@ -576,10 +573,13 @@
                 if (timerSecondsLeft === 0) {
                     stopTimer();
                     startAlarmSound();
-                    showNotification('⏰ انتهى المؤقت!', 'الوقت المحدد قد انتهى');
-                    document.getElementById('timerDisplay').classList.add('alert-ring');
+                    if (Notification.permission === 'granted') {
+                        new Notification('⏰ انتهى المؤقت!', { body: 'الوقت المحدد قد انتهى' });
+                    }
+                    const display = document.getElementById('timerDisplay');
+                    if (display) display.classList.add('alert-ring');
                     setTimeout(() => {
-                        document.getElementById('timerDisplay').classList.remove('alert-ring');
+                        if (display) display.classList.remove('alert-ring');
                     }, 1500);
                 }
             }, 1000);
@@ -602,17 +602,19 @@
             stopTimer();
             timerSecondsLeft = seconds;
             updateTimerDisplay();
-            document.getElementById('timerMinutes').value = Math.floor(seconds / 60);
-            document.getElementById('timerSeconds').value = seconds % 60;
+            const minutesInput = document.getElementById('timerMinutes');
+            const secondsInput = document.getElementById('timerSeconds');
+            if (minutesInput) minutesInput.value = Math.floor(seconds / 60);
+            if (secondsInput) secondsInput.value = seconds % 60;
         }
         
-        // Stopwatch Functions
+        // ========== Stopwatch Functions ==========
         function updateStopwatchDisplay() {
             const hours = Math.floor(stopwatchSeconds / 3600);
             const minutes = Math.floor((stopwatchSeconds % 3600) / 60);
             const seconds = stopwatchSeconds % 60;
-            document.getElementById('stopwatchDisplay').innerHTML = 
-                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const display = document.getElementById('stopwatchDisplay');
+            if (display) display.innerHTML = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
         
         function startStopwatch() {
@@ -638,66 +640,49 @@
             updateStopwatchDisplay();
         }
         
-        // Notification
-        function showNotification(title, body) {
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body: body });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission();
-            }
-        }
-        
-        // Task Functions
+        // ========== Task Functions ==========
         function startTaskWithTime(seconds, taskName) {
             stopTimer();
             timerSecondsLeft = seconds;
             updateTimerDisplay();
-            document.getElementById('timerMinutes').value = Math.floor(seconds / 60);
-            document.getElementById('timerSeconds').value = seconds % 60;
+            const minutesInput = document.getElementById('timerMinutes');
+            const secondsInput = document.getElementById('timerSeconds');
+            if (minutesInput) minutesInput.value = Math.floor(seconds / 60);
+            if (secondsInput) secondsInput.value = seconds % 60;
             startTimer();
             showToast(`بدء: ${taskName}`, 'success');
         }
         
-        function addCustomTask() {
-            const name = document.getElementById('newTaskName').value.trim();
-            const minutes = parseInt(document.getElementById('newTaskMinutes').value) || 0;
-            const seconds = parseInt(document.getElementById('newTaskSeconds').value) || 0;
-            const recurring = document.getElementById('newTaskRecurring').value;
+        function renderTasksList() {
+            const container = document.getElementById('tasksList');
+            const noTasksDiv = document.getElementById('noTasks');
             
-            if (!name) {
-                showToast('الرجاء إدخال اسم المهمة', 'error');
+            if (!container) return;
+            
+            if (customTasks.length === 0) {
+                container.innerHTML = '';
+                if (noTasksDiv) noTasksDiv.classList.remove('hidden');
                 return;
             }
             
-            const totalSeconds = (minutes * 60) + seconds;
-            if (totalSeconds <= 0) {
-                showToast('يجب إدخال وقت أكبر من صفر للمهمة', 'error');
-                return;
-            }
-            
-            const newTask = {
-                id: Date.now(),
-                name: name,
-                seconds: totalSeconds,
-                recurring: recurring,
-                createdAt: new Date().toISOString()
-            };
-            
-            customTasks.push(newTask);
-            localStorage.setItem('astra_clock_tasks', JSON.stringify(customTasks));
-            renderTasksList();
-            closeTaskModal();
-            showToast(`تمت إضافة "${name}" بنجاح`, 'success');
-            
-            // Reset form
-            document.getElementById('newTaskName').value = '';
-            document.getElementById('newTaskMinutes').value = '1';
-            document.getElementById('newTaskSeconds').value = '0';
-            document.getElementById('newTaskRecurring').value = 'none';
-        }
-        
-        function deleteCustomTask(taskId) {
-            const task = customTasks.find(t => t.id === taskId);
-            customTasks = customTasks.filter(t => t.id !== taskId);
-            localStorage.setItem('astra_clock_tasks', JSON.stringify(customTasks));
-            renderTasksList();
+            if (noTasksDiv) noTasksDiv.classList.add('hidden');
+            container.innerHTML = customTasks.map(task => {
+                const minutes = Math.floor(task.seconds / 60);
+                const seconds = task.seconds % 60;
+                const recurringText = {
+                    'daily': '📅 يومي',
+                    'weekly': '📆 أسبوعي',
+                    'monthly': '🗓️ شهري',
+                    'none': ''
+                }[task.recurring] || '';
+                
+                return `
+                    <div class="task-item p-4 rounded-xl flex items-center justify-between">
+                        <div class="flex-1 cursor-pointer" onclick="startTaskWithTime(${task.seconds}, '${task.name.replace(/'/g, "\\'")}')">
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <span class="font-bold">${task.name}</span>
+                                <span class="text-xs opacity-60">⏱️ ${minutes}:${String(seconds).padStart(2,'0')}</span>
+                                ${recurringText ? `<span class="recurring-badge">${recurringText}</span>` : ''}
+                            </div>
+                        </div>
+                        <button onclick="deleteCustomTask(${task.id})" class="text-white/30 hover:text-red-400 transition
