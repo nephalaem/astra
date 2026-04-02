@@ -2,357 +2,365 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <title>Astra Matrix - إدارة المهام</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astra - Task Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        :root { 
-            --accent: #6366f1; 
-            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+        :root {
+            --primary-color: #6366f1; 
+            --bg-gradient: radial-gradient(circle at top right, #1e1b4b1a, #000 80%);
         }
+
         body { 
             background: var(--bg-gradient); 
             background-attachment: fixed; 
             min-height: 100vh; 
-            transition: all 0.5s ease;
-            font-family: 'Tajawal', sans-serif;
-            overflow-x: hidden;
+            font-family: 'Tajawal', 'Inter', sans-serif;
+            color: white;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            transition: all 0.5s ease;
         }
-        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .filter-btn.active { border-bottom: 2px solid var(--accent); opacity: 1; color: var(--accent); }
         
-        #settingsMenu { 
-            display: none; 
-            z-index: 100; 
-            position: absolute;
-            left: 2rem;
-            top: 5rem;
-            width: 320px;
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.02); 
+            backdrop-filter: blur(25px) saturate(180%); 
+            border: 1px solid rgba(255, 255, 255, 0.06); 
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
-        #settingsMenu.show { display: block; animation: slideDown 0.2s ease-out; }
-        
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .theme-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,0.2); transition: 0.2s; }
-        .theme-dot:hover { transform: scale(1.2); border-color: white; }
-        
-        #confirmModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 200; align-items: center; justify-content: center; }
-        #confirmModal.show { display: flex; }
-        .confetti { position: absolute; pointer-events: none; z-index: 50; border-radius: 50%; }
-        
-        #taskInput { pointer-events: auto !important; position: relative; z-index: 10; }
 
-        .app-container {
-            width: 100%;
-            max-width: 100%;
-            padding-left: 2rem;
-            padding-right: 2rem;
-            margin-top: 2rem;
+        .task-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.04);
         }
+
+        .task-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: scale(1.01);
+        }
+
+        .svg-primary { stroke: var(--primary-color) !important; }
+        
+        #add-btn {
+            background-color: var(--primary-color) !important;
+            transition: all 0.3s ease;
+        }
+
+        .stat-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid var(--primary-color);
+            transition: all 0.5s ease;
+        }
+
+        /* حدود المربعات مع شفافية طفيفة */
+        .box-do { border-top: 3px solid #f87171cc !important; }
+        .box-schedule { border-top: 3px solid #60a5facc !important; }
+        .box-delegate { border-top: 3px solid #fb923ccc !important; }
+        .box-delete { border-top: 3px solid #9ca3afcc !important; }
+
+        .title-do { color: #f87171; }
+        .title-schedule { color: #60a5fa; }
+        .title-delegate { color: #fb923c; }
+        .title-delete { color: #9ca3af; }
+
+        .status-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.03);
+            font-weight: bold;
+        }
+
+        select option { background: #1e1b4b; color: white; }
+        
+        [data-i18n] { transition: opacity 0.2s; }
+
+        @keyframes success-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); filter: brightness(1.2); }
+            100% { transform: scale(1); }
+        }
+        .task-done-anim { animation: success-pop 0.4s ease-out; }
     </style>
-
+    
     <script>
-        (function() {
+        // دالة تطبيق الثيم فورياً
+        function applySavedTheme() {
             const savedTheme = JSON.parse(localStorage.getItem('astra_theme_data'));
             if (savedTheme) {
-                document.documentElement.style.setProperty('--accent', savedTheme.accent);
-                document.documentElement.style.setProperty('--bg-gradient', savedTheme.bg);
+                document.documentElement.style.setProperty('--primary-color', savedTheme.accent);
+                const bgValue = `radial-gradient(circle at top right, ${savedTheme.accent}1a, #000 85%)`;
+                document.documentElement.style.setProperty('--bg-gradient', bgValue);
+                document.body.style.background = bgValue;
+                
+                // تحديث العناصر المتأثرة باللون الرئيسي
+                const addBtn = document.getElementById('add-btn');
+                if(addBtn) addBtn.style.backgroundColor = savedTheme.accent;
+                const brand = document.getElementById('brand-title');
+                if(brand) brand.style.color = savedTheme.accent;
             }
-        })();
+        }
+        
+        // تنفيذ مبدئي قبل التحميل
+        applySavedTheme();
     </script>
 </head>
-<body class="text-white">
+<body class="p-4 md:p-8">
 
-    <div class="app-container min-h-screen flex flex-col" id="main-container">
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-10 shrink-0">
-            <div class="flex items-center gap-6 text-start">
-                <div>
-                    <span class="text-5xl font-bold" id="completion-rate">0%</span>
-                    <p class="text-xs uppercase opacity-50 tracking-widest" id="rate-label">نسبة الإنجاز</p>
-                </div>
-
-                <div class="flex gap-3">
-                    <!-- رابط مصفوفة أيزنهاور -->
-                    <a href="index2.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all text-white/20 hover:text-white/60 group" title="مصفوفة أيزنهاور">
-                        <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"></path>
-                        </svg>
-                    </a>
-
-                    <!-- رابط المؤقت الجديد -->
-                    <a href="clock.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all text-white/20 hover:text-white/60 group" title="مؤقت وكرونومتر">
-                        <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3" />
-                        </svg>
-                    </a>
-                </div>
+    <header class="max-w-5xl mx-auto flex justify-between items-center mb-12">
+        <div class="flex items-center gap-6">
+            <a href="index.html" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group">
+                <svg class="w-6 h-6 svg-primary group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+            </a>
+            <h1 id="brand-title" class="text-3xl font-black tracking-tighter">ASTRA MATRIX</h1>
+        </div>
+        
+        <div class="flex items-center gap-4 glass-card py-2 px-6 rounded-3xl">
+            <div class="stat-circle" id="stat-glow">
+                <span id="comp-rate" class="text-xl font-bold">0%</span>
             </div>
-            
-            <div class="flex items-center gap-6">
-                <div class="text-end">
-                    <h1 class="text-5xl font-bold tracking-tighter" id="brand-name" style="color: var(--accent);">ASTRA</h1>
-                    <p class="text-sm opacity-50" id="slogan">نظّم مهامك بذكاء</p>
-                </div>
-                <button id="menuTrigger" onclick="event.stopPropagation(); toggleMenu();" class="p-4 glass-card rounded-2xl hover:bg-white/10 transition-colors relative z-[110] text-2xl">⚙️</button>
+            <div class="text-right hidden sm:block">
+                <p class="text-[10px] opacity-40 tracking-widest uppercase font-bold" data-i18n="rate_label">مستوى الإنجاز</p>
+                <p class="text-xs" data-i18n="session_label">تحليل المصفوفة</p>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Settings Menu -->
-        <div id="settingsMenu" onclick="event.stopPropagation();" class="glass-card rounded-3xl p-6 shadow-2xl border-white/20">
-            <h3 class="text-xs font-bold opacity-50 mb-4 uppercase tracking-wider" id="theme-label">اختر السمة (15 ثيم)</h3>
-            <div class="grid grid-cols-5 gap-3 mb-6" id="themeGrid"></div>
-            
-            <div class="flex items-center justify-between bg-white/5 p-3 rounded-2xl">
-                <span class="text-sm font-medium" id="lang-label">لغة التطبيق</span>
-                <select onchange="changeLanguage(this.value)" class="bg-indigo-900/50 text-white text-xs border-none rounded-lg p-2 outline-none">
-                    <option value="ar">العربية</option>
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
+    <div id="view-matrix" class="max-w-5xl mx-auto pb-24">
+        <div class="glass-card p-2 rounded-[2rem] mb-10 flex flex-col md:flex-row gap-2">
+            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-white placeholder:text-white/20 text-lg" data-i18n-placeholder="input_placeholder">
+            <div class="flex gap-2 p-1">
+                <select id="quadSelect" class="bg-white/5 border-none px-4 rounded-2xl text-sm outline-none cursor-pointer text-white backdrop-blur-lg">
+                    <option value="do" data-i18n="opt_do">🔴 عاجل وهام</option>
+                    <option value="schedule" data-i18n="opt_schedule">🔵 خطط لها</option>
+                    <option value="delegate" data-i18n="opt_delegate">🟠 فوّضها</option>
+                    <option value="delete" data-i18n="opt_delete">⚪ احذفها</option>
                 </select>
-            </div>
-            
-            <hr class="my-6 border-white/10">
-            <button onclick="openModal()" class="w-full text-center py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-2xl text-sm font-bold transition-colors" id="clear-btn-text">مسح جميع المهام</button>
-        </div>
-
-        <!-- Input Section -->
-        <div class="flex gap-4 p-2 glass-card rounded-3xl mb-8 items-center shadow-lg shrink-0">
-            <input type="text" id="taskInput" class="bg-transparent flex-grow p-4 outline-none text-xl text-white" placeholder="أضف مهمة جديدة..." autocomplete="off">
-            <button onclick="addTask()" id="addBtn" style="background-color: var(--accent);" class="hover:opacity-90 px-12 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">إضافة</button>
-        </div>
-
-        <!-- Filter Tabs -->
-        <div class="flex gap-10 mb-8 text-sm font-bold uppercase tracking-widest opacity-60 shrink-0">
-            <button onclick="setFilter('all')" class="filter-btn active pb-2" id="f-all">الكل</button>
-            <button onclick="setFilter('active')" class="filter-btn pb-2" id="f-active">قيد التنفيذ</button>
-            <button onclick="setFilter('completed')" class="filter-btn pb-2" id="f-completed">المكتملة</button>
-        </div>
-
-        <!-- Task List Container -->
-        <div class="flex-grow pb-10">
-            <div id="taskList" class="grid grid-cols-1 gap-4"></div>
-            <div id="emptyState" class="text-center py-32 opacity-20 hidden">
-                <p class="text-7xl mb-4">✨</p>
-                <p id="empty-text" class="text-2xl">لا توجد مهام حالياً</p>
+                <button onclick="addTask()" class="px-10 py-4 rounded-2xl font-bold text-white shadow-lg active:scale-95 transition-all" id="add-btn" data-i18n="add_btn">إضافة</button>
             </div>
         </div>
-    </div>
 
-    <!-- Confirm Modal -->
-    <div id="confirmModal">
-        <div class="glass-card p-8 rounded-[2rem] max-w-xs w-full text-center border-white/20" onclick="event.stopPropagation();">
-            <h2 class="text-2xl font-bold mb-3" id="confirm-title">حذف الكل؟</h2>
-            <p class="text-sm opacity-60 mb-8" id="confirm-body">هل أنت متأكد؟ لا يمكن استرجاع المهام بعد حذفها.</p>
-            <div class="flex gap-3">
-                <button onclick="clearAll()" id="confirm-btn-action" class="flex-1 bg-red-600 hover:bg-red-500 py-3 rounded-2xl font-bold">نعم، احذف</button>
-                <button onclick="closeModal()" id="confirm-cancel-btn" class="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-2xl font-bold">إلغاء</button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass-card p-6 rounded-[2.5rem] box-do relative overflow-hidden">
+                <h3 class="title-do font-bold mb-6 flex justify-between items-center">
+                    <span class="text-sm" data-i18n="q1_title">افعل الآن</span>
+                    <span class="status-badge border border-red-500/20" data-i18n="q1_badge">عاجل / هام</span>
+                </h3>
+                <div id="list-do" class="space-y-3 min-h-[140px]"></div>
+            </div>
+
+            <div class="glass-card p-6 rounded-[2.5rem] box-schedule relative overflow-hidden">
+                <h3 class="title-schedule font-bold mb-6 flex justify-between items-center">
+                    <span class="text-sm" data-i18n="q2_title">خطط لها</span>
+                    <span class="status-badge border border-blue-500/20" data-i18n="q2_badge">غير عاجل / هام</span>
+                </h3>
+                <div id="list-schedule" class="space-y-3 min-h-[140px]"></div>
+            </div>
+
+            <div class="glass-card p-6 rounded-[2.5rem] box-delegate relative overflow-hidden">
+                <h3 class="title-delegate font-bold mb-6 flex justify-between items-center">
+                    <span class="text-sm" data-i18n="q3_title">فوّضها</span>
+                    <span class="status-badge border border-orange-500/20" data-i18n="q3_badge">عاجل / غير هام</span>
+                </h3>
+                <div id="list-delegate" class="space-y-3 min-h-[140px]"></div>
+            </div>
+
+            <div class="glass-card p-6 rounded-[2.5rem] box-delete relative overflow-hidden">
+                <h3 class="title-delete font-bold mb-6 flex justify-between items-center">
+                    <span class="text-sm" data-i18n="q4_title">احذفها</span>
+                    <span class="status-badge border border-gray-500/20" data-i18n="q4_badge">غير عاجل / غير هام</span>
+                </h3>
+                <div id="list-delete" class="space-y-3 min-h-[140px]"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let tasks = JSON.parse(localStorage.getItem('astra_tasks')) || [];
-        let currentFilter = 'all';
-        let currentLang = 'ar';
+        const MATRIX_KEY = 'astra_matrix_tasks';
+        let tasks = JSON.parse(localStorage.getItem(MATRIX_KEY)) || [];
 
-        const i18n = {
-            ar: { rate: "نسبة الإنجاز", slogan: "نظّم مهامك بذكاء", placeholder: "أضف مهمة جديدة...", add: "إضافة", themes: "اختر السمة (15 ثيم)", lang: "لغة التطبيق", clear: "مسح جميع المهام", empty: "لا توجد مهام حالياً", all: "الكل", active: "قيد التنفيذ", completed: "المكتملة", cTitle: "حذف الكل؟", cBody: "لا يمكن التراجع عن الحذف.", cBtn: "نعم، احذف", cCan: "إلغاء" },
-            en: { rate: "Completion Rate", slogan: "Organize smartly", placeholder: "Add new task...", add: "Add", themes: "Themes (15)", lang: "Language", clear: "Clear All Tasks", empty: "No tasks yet", all: "All", active: "Active", completed: "Completed", cTitle: "Clear All?", cBody: "This cannot be undone.", cBtn: "Yes, Clear", cCan: "Cancel" },
-            fr: { rate: "Taux de réussite", slogan: "Organisez intelligemment", placeholder: "Ajouter une tâche...", add: "Ajouter", themes: "Thèmes (15)", lang: "Langue", clear: "Tout effacer", empty: "Aucune tâche", all: "Tout", active: "En cours", completed: "Terminé", cTitle: "Tout effacer?", cBody: "Action irréversible.", cBtn: "Oui, effacer", cCan: "Annuler" }
+        const translations = {
+            ar: {
+                rate_label: "مستوى الإنجاز",
+                session_label: "تحليل المصفوفة",
+                input_placeholder: "أضف مهمة جديدة للمصفوفة...",
+                add_btn: "إضافة",
+                opt_do: "🔴 عاجل وهام",
+                opt_schedule: "🔵 خطط لها",
+                opt_delegate: "🟠 فوّضها",
+                opt_delete: "⚪ احذفها",
+                q1_title: "افعل الآن",
+                q1_badge: "عاجل / هام",
+                q2_title: "خطط لها",
+                q2_badge: "غير عاجل / هام",
+                q3_title: "فوّضها",
+                q3_badge: "عاجل / غير هام",
+                q4_title: "احذفها",
+                q4_badge: "غير عاجل / غير هام"
+            },
+            en: {
+                rate_label: "Completion Rate",
+                session_label: "Matrix Analysis",
+                input_placeholder: "Add new task to matrix...",
+                add_btn: "Add",
+                opt_do: "🔴 Do Now",
+                opt_schedule: "🔵 Schedule",
+                opt_delegate: "🟠 Delegate",
+                opt_delete: "⚪ Delete",
+                q1_title: "Do Now",
+                q1_badge: "Urgent / Important",
+                q2_title: "Schedule",
+                q2_badge: "Not Urgent / Important",
+                q3_title: "Delegate",
+                q3_badge: "Urgent / Not Important",
+                q4_title: "Delete",
+                q4_badge: "Not Urgent / Not Important"
+            },
+            fr: {
+                rate_label: "Taux de réussite",
+                session_label: "Analyse Matrice",
+                input_placeholder: "Ajouter une tâche...",
+                add_btn: "Ajouter",
+                opt_do: "🔴 Urgent / Important",
+                opt_schedule: "🔵 Planifier",
+                opt_delegate: "🟠 Déléguer",
+                opt_delete: "⚪ Supprimer",
+                q1_title: "Faire maintenant",
+                q1_badge: "Urgent / Important",
+                q2_title: "Planifier",
+                q2_badge: "Non-urgent / Important",
+                q3_title: "Déléguer",
+                q3_badge: "Urgent / Non-important",
+                q4_title: "Supprimer",
+                q4_badge: "Non-urgent / Non-important"
+            }
         };
 
-        const themes = [
-            { bg: 'linear-gradient(135deg, #1e1b4b, #312e81)', accent: '#6366f1' },
-            { bg: 'linear-gradient(135deg, #0f172a, #1e293b)', accent: '#38bdf8' },
-            { bg: 'linear-gradient(135deg, #064e3b, #065f46)', accent: '#34d399' },
-            { bg: 'linear-gradient(135deg, #451a03, #78350f)', accent: '#fbbf24' },
-            { bg: 'linear-gradient(135deg, #4c0519, #831843)', accent: '#fb7185' },
-            { bg: 'linear-gradient(135deg, #1e1e1e, #111111)', accent: '#ffffff' },
-            { bg: 'linear-gradient(135deg, #2e1065, #4338ca)', accent: '#a78bfa' },
-            { bg: 'linear-gradient(135deg, #0c4a6e, #075985)', accent: '#7dd3fc' },
-            { bg: 'linear-gradient(135deg, #3f6212, #4d7c0f)', accent: '#a3e635' },
-            { bg: 'linear-gradient(135deg, #7c2d12, #9a3412)', accent: '#fb923c' },
-            { bg: 'linear-gradient(135deg, #134e4a, #115e59)', accent: '#2dd4bf' },
-            { bg: 'linear-gradient(135deg, #581c87, #6b21a8)', accent: '#d8b4fe' },
-            { bg: 'linear-gradient(135deg, #831843, #9d174d)', accent: '#f472b6' },
-            { bg: 'linear-gradient(135deg, #0f172a, #334155)', accent: '#94a3b8' },
-            { bg: 'linear-gradient(135deg, #1e1b4b, #4338ca)', accent: '#818cf8' }
-        ];
+        function playSuccessSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.4);
+            } catch(e) {}
+        }
 
-        document.addEventListener('click', () => {
-            const menu = document.getElementById('settingsMenu');
-            if (menu.classList.contains('show')) menu.classList.remove('show');
-        });
-
-        function toggleMenu() {
-            document.getElementById('settingsMenu').classList.toggle('show');
+        function updateLanguage() {
+            const savedLang = localStorage.getItem('astra_lang') || 'ar';
+            const lang = translations[savedLang] || translations.ar;
+            document.documentElement.lang = savedLang;
+            document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (lang[key]) el.innerText = lang[key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (lang[key]) el.placeholder = lang[key];
+            });
         }
 
         function renderTasks() {
-            const list = document.getElementById('taskList');
-            list.innerHTML = '';
-            let filtered = tasks;
-            if (currentFilter === 'active') filtered = tasks.filter(t => !t.completed);
-            if (currentFilter === 'completed') filtered = tasks.filter(t => t.completed);
+            ['do', 'schedule', 'delegate', 'delete'].forEach(id => {
+                const el = document.getElementById('list-' + id);
+                if(el) el.innerHTML = '';
+            });
 
-            if (filtered.length === 0) document.getElementById('emptyState').classList.remove('hidden');
-            else document.getElementById('emptyState').classList.add('hidden');
-
-            filtered.forEach((task, index) => {
-                const div = document.createElement('div');
-                div.className = `glass-card p-5 rounded-3xl flex items-center gap-6 transition-all ${task.completed ? 'opacity-40 scale-[0.99]' : ''}`;
-                div.innerHTML = `
-                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${index})" class="w-8 h-8 rounded-full cursor-pointer accent-indigo-500">
-                    <span class="flex-grow text-xl ${task.completed ? 'line-through' : ''}">${task.text}</span>
-                    <button onclick="deleteTask(${index})" class="text-white/20 hover:text-red-400 text-xl px-2">✕</button>
-                `;
-                list.appendChild(div);
+            tasks.forEach((t, i) => {
+                const quad = t.quadrant || 'do'; 
+                const list = document.getElementById('list-' + quad);
+                if (list) {
+                    const item = document.createElement('div');
+                    item.id = `task-row-${i}`;
+                    item.className = `task-item p-4 rounded-2xl flex items-center justify-between ${t.completed ? 'opacity-30 grayscale' : ''}`;
+                    item.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${i})" class="w-5 h-5 rounded-lg cursor-pointer accent-indigo-500">
+                            <span class="text-sm font-medium ${t.completed ? 'line-through' : ''}">${t.text}</span>
+                        </div>
+                        <button onclick="deleteTask(${i})" class="text-white/10 hover:text-red-500 transition-colors p-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    `;
+                    list.appendChild(item);
+                }
             });
             updateStats();
         }
 
         function addTask() {
             const input = document.getElementById('taskInput');
+            const quad = document.getElementById('quadSelect').value;
             if (input.value.trim()) {
-                tasks.unshift({ text: input.value, completed: false });
-                localStorage.setItem('astra_tasks', JSON.stringify(tasks));
+                tasks.unshift({ text: input.value.trim(), quadrant: quad, completed: false });
                 input.value = '';
-                renderTasks();
+                save();
             }
         }
 
-        function toggleTask(index) {
-            tasks[index].completed = !tasks[index].completed;
-            if(tasks[index].completed) {
-                playBell();
-                createConfetti();
+        function toggleTask(i) { 
+            tasks[i].completed = !tasks[i].completed; 
+            if(tasks[i].completed) {
+                playSuccessSound();
+                const row = document.getElementById(`task-row-${i}`);
+                if(row) row.classList.add('task-done-anim');
             }
-            localStorage.setItem('astra_tasks', JSON.stringify(tasks));
-            renderTasks();
+            save(); 
         }
 
-        function deleteTask(index) {
-            tasks.splice(index, 1);
-            localStorage.setItem('astra_tasks', JSON.stringify(tasks));
-            renderTasks();
-        }
-
-        function clearAll() {
-            tasks = [];
-            localStorage.removeItem('astra_tasks');
-            closeModal();
-            renderTasks();
-        }
-
-        function setFilter(f) {
-            currentFilter = f;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('f-' + f).classList.add('active');
-            renderTasks();
-        }
-
-        function changeLanguage(lang) {
-            currentLang = lang;
-            const t = i18n[lang];
-            document.documentElement.lang = lang;
-            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-            document.getElementById('rate-label').innerText = t.rate;
-            document.getElementById('slogan').innerText = t.slogan;
-            document.getElementById('taskInput').placeholder = t.placeholder;
-            document.getElementById('addBtn').innerText = t.add;
-            document.getElementById('theme-label').innerText = t.themes;
-            document.getElementById('lang-label').innerText = t.lang;
-            document.getElementById('clear-btn-text').innerText = t.clear;
-            document.getElementById('empty-text').innerText = t.empty;
-            document.getElementById('f-all').innerText = t.all;
-            document.getElementById('f-active').innerText = t.active;
-            document.getElementById('f-completed').innerText = t.completed;
-            document.getElementById('confirm-title').innerText = t.cTitle;
-            document.getElementById('confirm-body').innerText = t.cBody;
-            document.getElementById('confirm-btn-action').innerText = t.cBtn;
-            document.getElementById('confirm-cancel-btn').innerText = t.cCan;
-            
-            const menu = document.getElementById('settingsMenu');
-            if(lang === 'ar') {
-                menu.style.left = '2rem';
-                menu.style.right = 'auto';
-            } else {
-                menu.style.right = '2rem';
-                menu.style.left = 'auto';
-            }
-            renderTasks();
-        }
-
-        function applyTheme(t) {
-            document.body.style.background = t.bg;
-            document.documentElement.style.setProperty('--accent', t.accent);
-            document.documentElement.style.setProperty('--bg-gradient', t.bg);
-            document.getElementById('brand-name').style.color = t.accent;
-            document.getElementById('addBtn').style.backgroundColor = t.accent;
-            
-            localStorage.setItem('astra_theme', t.accent); 
-            localStorage.setItem('astra_theme_data', JSON.stringify(t));
-        }
-
-        function initThemes() {
-            const grid = document.getElementById('themeGrid');
-            themes.forEach(t => {
-                const dot = document.createElement('div');
-                dot.className = 'theme-dot';
-                dot.style.background = t.bg;
-                dot.onclick = (e) => {
-                    e.stopPropagation();
-                    applyTheme(t);
-                };
-                grid.appendChild(dot);
-            });
-
-            const saved = JSON.parse(localStorage.getItem('astra_theme_data'));
-            if (saved) applyTheme(saved);
-        }
+        function deleteTask(i) { tasks.splice(i, 1); save(); }
+        function save() { localStorage.setItem(MATRIX_KEY, JSON.stringify(tasks)); renderTasks(); }
 
         function updateStats() {
             const done = tasks.filter(t => t.completed).length;
-            const perc = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
-            document.getElementById('completion-rate').innerText = perc + '%';
-        }
-
-        function openModal() { document.getElementById('confirmModal').classList.add('show'); }
-        function closeModal() { document.getElementById('confirmModal').classList.remove('show'); }
-
-        function playBell() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.frequency.value = 800; gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.5);
-        }
-
-        function createConfetti() {
-            for (let i = 0; i < 30; i++) {
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = Math.random() * 100 + '%';
-                c.style.top = Math.random() * 100 + '%';
-                c.style.width = Math.random() * 10 + 5 + 'px';
-                c.style.height = c.style.width;
-                c.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
-                document.body.appendChild(c);
-                const x = (Math.random() - 0.5) * 400;
-                const y = (Math.random() - 0.5) * 400;
-                c.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${x}px,${y}px) scale(0)`, opacity: 0 }], { duration: 1500 }).onfinish = () => c.remove();
+            const rate = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+            document.getElementById('comp-rate').innerText = rate + '%';
+            const glow = document.getElementById('stat-glow');
+            if(glow) {
+                const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+                glow.style.boxShadow = `0 0 ${10 + (rate/5)}px ${primaryColor}44`;
+                glow.style.background = `rgba(255,255,255,${0.03 + (rate/1000)})`;
+                glow.style.borderColor = primaryColor;
             }
         }
 
-        initThemes();
-        renderTasks();
+        // مراقبة تغييرات التخزين لتحديث الصفحة فوراً عند تغيير الإعدادات في التبويب الآخر
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'astra_theme_data') applySavedTheme();
+            if (e.key === 'astra_lang') updateLanguage();
+            if (e.key === MATRIX_KEY) {
+                tasks = JSON.parse(e.newValue) || [];
+                renderTasks();
+            }
+        });
+
+        window.onload = () => {
+            applySavedTheme();
+            updateLanguage();
+            renderTasks();
+        };
+
         document.getElementById('taskInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
     </script>
 </body>
