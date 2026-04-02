@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astra Clock - مؤقت وكرونومتر</title>
+    <title>Astra Clock - Timer & Stopwatch</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -26,7 +26,7 @@
             background: var(--bg-gradient); 
             background-attachment: fixed; 
             min-height: 100vh; 
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Inter', sans-serif;
             color: white;
             margin: 0;
             overflow-x: hidden;
@@ -41,17 +41,14 @@
         }
 
         .timer-display {
-            font-family: 'Inter', sans-serif;
-            font-variant-numeric: tabular-nums; /* يمنع اهتزاز الأرقام أثناء العد */
             font-size: 4rem;
             font-weight: 900;
-            direction: ltr;
-            display: inline-block;
+            font-variant-numeric: tabular-nums;
             background: linear-gradient(135deg, #fff, var(--primary-color));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.3));
+            text-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
         }
 
         .progress-bar-container {
@@ -60,7 +57,7 @@
             background: rgba(255, 255, 255, 0.05);
             position: absolute;
             bottom: 0;
-            right: 0;
+            left: 0;
             border-radius: 0 0 2rem 2rem;
             overflow: hidden;
         }
@@ -76,18 +73,12 @@
             transition: all 0.3s ease;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            cursor: pointer;
         }
 
         .task-item:hover {
             background: var(--glass-hover);
-            transform: scale(1.02);
+            transform: translateY(-2px);
         }
-
-        .btn-action {
-            transition: all 0.2s ease;
-        }
-        .btn-action:active { transform: scale(0.95); }
 
         .time-input {
             background: rgba(255, 255, 255, 0.05);
@@ -97,6 +88,7 @@
             text-align: center;
             color: white;
             outline: none;
+            width: 70px;
         }
 
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
@@ -108,27 +100,27 @@
     <header class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
         <div class="flex items-center gap-6">
             <button onclick="window.history.back()" class="p-3 glass-card rounded-2xl hover:bg-white/10 transition-all group">
-                <svg class="w-6 h-6 text-indigo-400 group-hover:translate-x-1 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 text-indigo-400 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
             </button>
             <div>
                 <h1 class="text-4xl font-black tracking-tight" style="color: var(--primary-color);">ASTRA CLOCK</h1>
-                <p class="text-[10px] opacity-40 tracking-[0.2em] font-bold uppercase mt-1">تطبيقات الوقت والأداء المتقدمة</p>
+                <p class="text-[10px] opacity-40 tracking-[0.2em] font-bold uppercase mt-1">Advanced Performance Suite</p>
             </div>
         </div>
         
         <div class="flex gap-4">
             <div class="glass-card py-3 px-6 rounded-[2rem] hidden md:block">
                 <div class="text-center">
-                    <p class="text-[10px] opacity-40 tracking-widest uppercase">المهام المنجزة</p>
+                    <p class="text-[10px] opacity-40 tracking-widest uppercase">Tasks Done</p>
                     <p id="taskStats" class="text-xl font-bold text-indigo-400">0</p>
                 </div>
             </div>
             <div class="glass-card py-3 px-6 rounded-[2rem]">
                 <div class="text-center">
-                    <p class="text-[10px] opacity-40 tracking-widest uppercase">الوقت الحالي</p>
-                    <p id="currentTime" class="text-xl font-mono font-bold" style="direction: ltr;">00:00:00</p>
+                    <p class="text-[10px] opacity-40 tracking-widest uppercase">Current Time</p>
+                    <p id="currentTime" class="text-xl font-bold">00:00:00</p>
                 </div>
             </div>
         </div>
@@ -142,26 +134,29 @@
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        مؤقت تنازلي
+                        Countdown Timer
                     </h3>
                     <div class="flex gap-2">
-                        <button onclick="setQuickTimer(300)" class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/5">5 د</button>
-                        <button onclick="setQuickTimer(1500)" class="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">25 د</button>
+                        <button onclick="setQuickTimer(300)" class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10">5m</button>
+                        <button onclick="setQuickTimer(1500)" class="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300">25m</button>
                     </div>
                 </div>
                 
-                <div class="text-center mb-6 relative">
+                <div class="text-center mb-6">
                     <div id="timerDisplay" class="timer-display text-6xl md:text-8xl mb-4">00:00:00</div>
                     
-                    <div class="flex flex-wrap justify-center gap-3 mt-8">
-                        <div class="flex gap-2 bg-black/20 p-2 rounded-2xl border border-white/5" dir="ltr">
-                            <input type="number" id="timerMinutes" placeholder="MM" class="time-input w-16" value="0" min="0">
-                            <span class="flex items-center">:</span>
-                            <input type="number" id="timerSeconds" placeholder="SS" class="time-input w-16" value="0" min="0" max="59">
+                    <div class="flex justify-center gap-3 mt-8">
+                        <div class="flex gap-2 bg-black/20 p-2 rounded-2xl border border-white/5">
+                            <input type="number" id="timerMinutes" placeholder="MM" class="time-input" value="25">
+                            <span class="flex items-center text-xl">:</span>
+                            <input type="number" id="timerSeconds" placeholder="SS" class="time-input" value="00">
                         </div>
-                        <button onclick="startTimer()" id="timerStartBtn" class="btn-action px-6 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500">▶ بدء</button>
-                        <button onclick="stopTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-red-600/50 hover:bg-red-600">⏸ إيقاف</button>
-                        <button onclick="resetTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20">↺ إعادة</button>
+                    </div>
+
+                    <div class="flex justify-center gap-3 mt-6">
+                        <button onclick="startTimer()" id="timerStartBtn" class="px-8 py-3 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-500 transition-colors">Start</button>
+                        <button onclick="stopTimer()" class="px-8 py-3 rounded-2xl font-bold bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all">Stop</button>
+                        <button onclick="resetTimer()" class="px-8 py-3 rounded-2xl font-bold bg-white/5 hover:bg-white/10 transition-colors">Reset</button>
                     </div>
                 </div>
                 <div class="progress-bar-container">
@@ -174,16 +169,16 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
-                    كرونومتر متقدم
+                    Stopwatch
                 </h3>
                 
                 <div class="text-center mb-6">
                     <div id="stopwatchDisplay" class="timer-display text-6xl md:text-8xl mb-4">00:00:00</div>
-                    <div class="flex flex-wrap justify-center gap-3">
-                        <button onclick="startStopwatch()" class="btn-action px-8 py-3 rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-500">▶ بدء</button>
-                        <button onclick="stopStopwatch()" class="btn-action px-8 py-3 rounded-2xl font-bold bg-red-600/50 hover:bg-red-600">⏸ إيقاف</button>
-                        <button onclick="recordLap()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20">🏁 دورة</button>
-                        <button onclick="resetStopwatch()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/5 hover:bg-white/10">↺ تصفير</button>
+                    <div class="flex justify-center gap-3 mt-10">
+                        <button onclick="startStopwatch()" class="px-8 py-3 rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-500">Start</button>
+                        <button onclick="stopStopwatch()" class="px-8 py-3 rounded-2xl font-bold bg-red-600/20 text-red-400">Stop</button>
+                        <button onclick="recordLap()" class="px-6 py-3 rounded-2xl font-bold bg-white/5 hover:bg-white/10">Lap</button>
+                        <button onclick="resetStopwatch()" class="px-6 py-3 rounded-2xl font-bold bg-white/5 hover:bg-white/10">Reset</button>
                     </div>
                 </div>
                 <div id="lapsContainer" class="mt-4 max-h-32 overflow-y-auto custom-scrollbar space-y-1"></div>
@@ -196,55 +191,58 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
-                    المهام المجدولة
+                    Saved Tasks
                 </h3>
-                <button onclick="openAddTaskModal()" class="btn-action px-4 py-2 rounded-xl bg-indigo-600 text-sm font-bold">+ إضافة</button>
+                <button onclick="openAddTaskModal()" class="px-4 py-2 rounded-xl bg-indigo-600 text-sm font-bold hover:bg-indigo-500">+ Add Task</button>
             </div>
             <div id="tasksList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-            <div id="noTasks" class="text-center py-8 opacity-40">لا توجد مهام حالياً</div>
+            <div id="noTasks" class="text-center py-8 opacity-40">No tasks saved yet.</div>
         </div>
     </main>
 
     <div id="taskModal" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 hidden items-center justify-center p-4">
         <div class="glass-card p-8 rounded-[2.5rem] max-w-md w-full border-white/20">
-            <h3 class="text-2xl font-black mb-6">إضافة مهمة جديدة</h3>
+            <h3 class="text-2xl font-black mb-6">New Task</h3>
             <div class="space-y-4">
-                <input type="text" id="newTaskName" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none" placeholder="اسم المهمة...">
-                <div class="grid grid-cols-2 gap-4" dir="ltr">
-                    <div class="text-center"><p class="text-[10px] mb-1 opacity-50">دقائق</p><input type="number" id="newTaskMinutes" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center" value="25"></div>
-                    <div class="text-center"><p class="text-[10px] mb-1 opacity-50">ثواني</p><input type="number" id="newTaskSeconds" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center" value="0"></div>
+                <input type="text" id="newTaskName" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none" placeholder="Task Name...">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><p class="text-[10px] mb-1 opacity-50 uppercase">Minutes</p><input type="number" id="newTaskMinutes" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center" value="25"></div>
+                    <div><p class="text-[10px] mb-1 opacity-50 uppercase">Seconds</p><input type="number" id="newTaskSeconds" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center" value="0"></div>
                 </div>
-                <button onclick="addCustomTask()" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold">حفظ المهمة</button>
-                <button onclick="closeTaskModal()" class="w-full text-sm opacity-50">إلغاء</button>
+                <button onclick="addCustomTask()" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold">Save Task</button>
+                <button onclick="closeTaskModal()" class="w-full text-sm opacity-50">Cancel</button>
             </div>
         </div>
     </div>
 
     <script>
-        let timerInterval = null, timerSecondsLeft = 0, timerTotalInitial = 0, isTimerRunning = false;
-        let stopwatchInterval = null, stopwatchSeconds = 0, isStopwatchRunning = false, stopwatchLaps = [];
+        let timerInterval, timerSecondsLeft = 0, timerTotalInitial = 0, isTimerRunning = false;
+        let stopwatchInterval, stopwatchSeconds = 0, isStopwatchRunning = false, stopwatchLaps = [];
         let customTasks = JSON.parse(localStorage.getItem('astra_clock_tasks')) || [];
         let completedCount = parseInt(localStorage.getItem('astra_completed_count')) || 0;
 
         function updateCurrentTime() {
             const now = new Date();
-            document.getElementById('currentTime').innerText = now.toLocaleTimeString('en-GB', { hour12: false });
+            document.getElementById('currentTime').innerText = now.toLocaleTimeString('en-US', { hour12: false });
         }
         setInterval(updateCurrentTime, 1000);
 
+        function formatTime(totalSeconds) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+
         function updateTimerDisplay() {
-            const h = Math.floor(timerSecondsLeft / 3600), 
-                  m = Math.floor((timerSecondsLeft % 3600) / 60), 
-                  s = timerSecondsLeft % 60;
-            document.getElementById('timerDisplay').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            
+            document.getElementById('timerDisplay').innerText = formatTime(timerSecondsLeft);
             const progress = timerTotalInitial > 0 ? (timerSecondsLeft / timerTotalInitial) * 100 : 0;
             document.getElementById('timerProgressBar').style.width = `${progress}%`;
         }
 
         function startTimer() {
             if (isTimerRunning) return;
-            if (timerSecondsLeft === 0) {
+            if (timerSecondsLeft <= 0) {
                 const m = parseInt(document.getElementById('timerMinutes').value) || 0;
                 const s = parseInt(document.getElementById('timerSeconds').value) || 0;
                 timerSecondsLeft = (m * 60) + s;
@@ -252,52 +250,28 @@
             }
             if (timerSecondsLeft <= 0) return;
             isTimerRunning = true;
-            document.getElementById('timerStartBtn').innerText = "▶ جاري";
+            document.getElementById('timerStartBtn').innerText = "Running";
             timerInterval = setInterval(() => {
                 if (timerSecondsLeft > 0) { 
-                    timerSecondsLeft--; 
-                    updateTimerDisplay(); 
+                    timerSecondsLeft--; updateTimerDisplay(); 
                 } else { 
-                    stopTimer(); 
-                    completedCount++; 
-                    updateStats(); 
-                    alert("انتهى الوقت!"); 
+                    stopTimer(); completedCount++; updateStats(); alert("Time is up!"); 
                 }
             }, 1000);
         }
 
-        function stopTimer() { 
-            clearInterval(timerInterval); 
-            isTimerRunning = false; 
-            document.getElementById('timerStartBtn').innerText = "▶ بدء";
-        }
-
-        function resetTimer() { 
-            stopTimer(); 
-            timerSecondsLeft = 0; 
-            timerTotalInitial = 0;
-            updateTimerDisplay(); 
-        }
-
-        function setQuickTimer(s) { 
-            stopTimer(); 
-            timerSecondsLeft = s; 
-            timerTotalInitial = s; 
-            updateTimerDisplay(); 
-        }
+        function stopTimer() { clearInterval(timerInterval); isTimerRunning = false; document.getElementById('timerStartBtn').innerText = "Start"; }
+        function resetTimer() { stopTimer(); timerSecondsLeft = 0; timerTotalInitial = 0; updateTimerDisplay(); }
+        function setQuickTimer(s) { stopTimer(); timerSecondsLeft = s; timerTotalInitial = s; updateTimerDisplay(); }
 
         function startStopwatch() {
             if (isStopwatchRunning) return;
             isStopwatchRunning = true;
             stopwatchInterval = setInterval(() => {
                 stopwatchSeconds++;
-                const h = Math.floor(stopwatchSeconds/3600), 
-                      m = Math.floor((stopwatchSeconds%3600)/60), 
-                      s = stopwatchSeconds%60;
-                document.getElementById('stopwatchDisplay').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                document.getElementById('stopwatchDisplay').innerText = formatTime(stopwatchSeconds);
             }, 1000);
         }
-
         function stopStopwatch() { clearInterval(stopwatchInterval); isStopwatchRunning = false; }
         function resetStopwatch() { stopStopwatch(); stopwatchSeconds = 0; document.getElementById('stopwatchDisplay').innerText = "00:00:00"; stopwatchLaps = []; renderLaps(); }
         function recordLap() { if(stopwatchSeconds > 0) { stopwatchLaps.unshift(document.getElementById('stopwatchDisplay').innerText); renderLaps(); } }
@@ -305,8 +279,8 @@
         function renderLaps() {
             document.getElementById('lapsContainer').innerHTML = stopwatchLaps.map((l, i) => `
                 <div class="flex justify-between p-2 border-b border-white/5 text-xs">
-                    <span>دورة ${stopwatchLaps.length - i}</span>
-                    <span class="font-mono text-emerald-400">${l}</span>
+                    <span>Lap ${stopwatchLaps.length - i}</span>
+                    <span class="font-mono text-indigo-400">${l}</span>
                 </div>`).join('');
         }
 
@@ -333,24 +307,19 @@
             const container = document.getElementById('tasksList');
             document.getElementById('noTasks').style.display = customTasks.length ? 'none' : 'block';
             container.innerHTML = customTasks.map(t => `
-                <div class="task-item p-4 rounded-2xl flex justify-between items-center" onclick="setQuickTimer(${t.seconds})">
+                <div class="task-item p-4 rounded-2xl flex justify-between items-center cursor-pointer" onclick="setQuickTimer(${t.seconds})">
                     <div>
                         <p class="font-bold text-sm">${t.name}</p>
-                        <p class="text-[10px] opacity-50">${Math.floor(t.seconds/60)} دقيقة</p>
+                        <p class="text-[10px] opacity-50">${Math.floor(t.seconds/60)} mins</p>
                     </div>
                     <button onclick="deleteCustomTask(${t.id}, event)" class="text-red-400 hover:scale-125 transition-transform p-2">✕</button>
                 </div>`).join('');
         }
 
-        function updateStats() { 
-            document.getElementById('taskStats').innerText = completedCount; 
-            localStorage.setItem('astra_completed_count', completedCount); 
-        }
-
+        function updateStats() { document.getElementById('taskStats').innerText = completedCount; localStorage.setItem('astra_completed_count', completedCount); }
         function openAddTaskModal() { document.getElementById('taskModal').style.display = 'flex'; }
         function closeTaskModal() { document.getElementById('taskModal').style.display = 'none'; }
 
-        // تهيئة عند التشغيل
         updateCurrentTime();
         renderTasksList();
         updateStats();
