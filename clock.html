@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Astra Clock - مؤقت وكرونومتر</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -41,25 +41,34 @@
         }
 
         .timer-display {
-            font-family: 'Inter', monospace;
+            font-family: 'Inter', sans-serif;
+            font-variant-numeric: tabular-nums; /* يمنع اهتزاز الأرقام أثناء العد */
             font-size: 4rem;
-            font-weight: 800;
-            direction: ltr; /* لضمان بقاء النقطتين في مكانها الصحيح بين الأرقام */
+            font-weight: 900;
+            direction: ltr;
             display: inline-block;
             background: linear-gradient(135deg, #fff, var(--primary-color));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+            filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.3));
         }
 
-        .progress-bar-bg {
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
             position: absolute;
             bottom: 0;
             right: 0;
-            height: 4px;
+            border-radius: 0 0 2rem 2rem;
+            overflow: hidden;
+        }
+
+        .progress-bar-bg {
+            height: 100%;
             background: var(--primary-color);
-            transition: width 1s linear;
+            transition: width 0.3s linear;
             box-shadow: var(--accent-glow);
         }
 
@@ -127,7 +136,7 @@
 
     <main class="max-w-6xl mx-auto space-y-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="glass-card p-6 rounded-[2rem] relative">
+            <div class="glass-card p-6 rounded-[2rem] relative overflow-hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-black flex items-center gap-2 text-indigo-400">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,7 +152,6 @@
                 
                 <div class="text-center mb-6 relative">
                     <div id="timerDisplay" class="timer-display text-6xl md:text-8xl mb-4">00:00:00</div>
-                    <div id="timerProgressBar" class="progress-bar-bg" style="width: 0%"></div>
                     
                     <div class="flex flex-wrap justify-center gap-3 mt-8">
                         <div class="flex gap-2 bg-black/20 p-2 rounded-2xl border border-white/5" dir="ltr">
@@ -155,6 +163,9 @@
                         <button onclick="stopTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-red-600/50 hover:bg-red-600">⏸ إيقاف</button>
                         <button onclick="resetTimer()" class="btn-action px-6 py-3 rounded-2xl font-bold bg-white/10 hover:bg-white/20">↺ إعادة</button>
                     </div>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="timerProgressBar" class="progress-bar-bg" style="width: 0%"></div>
                 </div>
             </div>
 
@@ -200,8 +211,8 @@
             <div class="space-y-4">
                 <input type="text" id="newTaskName" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none" placeholder="اسم المهمة...">
                 <div class="grid grid-cols-2 gap-4" dir="ltr">
-                    <input type="number" id="newTaskMinutes" class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center" value="25">
-                    <input type="number" id="newTaskSeconds" class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center" value="0">
+                    <div class="text-center"><p class="text-[10px] mb-1 opacity-50">دقائق</p><input type="number" id="newTaskMinutes" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center" value="25"></div>
+                    <div class="text-center"><p class="text-[10px] mb-1 opacity-50">ثواني</p><input type="number" id="newTaskSeconds" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center" value="0"></div>
                 </div>
                 <button onclick="addCustomTask()" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold">حفظ المهمة</button>
                 <button onclick="closeTaskModal()" class="w-full text-sm opacity-50">إلغاء</button>
@@ -217,15 +228,18 @@
 
         function updateCurrentTime() {
             const now = new Date();
-            // استخدام en-GB لضمان أرقام 123 بدلاً من ١٢٣ لضمان عمل السكربت برمجياً
             document.getElementById('currentTime').innerText = now.toLocaleTimeString('en-GB', { hour12: false });
         }
         setInterval(updateCurrentTime, 1000);
 
         function updateTimerDisplay() {
-            const h = Math.floor(timerSecondsLeft / 3600), m = Math.floor((timerSecondsLeft % 3600) / 60), s = timerSecondsLeft % 60;
+            const h = Math.floor(timerSecondsLeft / 3600), 
+                  m = Math.floor((timerSecondsLeft % 3600) / 60), 
+                  s = timerSecondsLeft % 60;
             document.getElementById('timerDisplay').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            if (timerTotalInitial > 0) document.getElementById('timerProgressBar').style.width = `${(timerSecondsLeft / timerTotalInitial) * 100}%`;
+            
+            const progress = timerTotalInitial > 0 ? (timerSecondsLeft / timerTotalInitial) * 100 : 0;
+            document.getElementById('timerProgressBar').style.width = `${progress}%`;
         }
 
         function startTimer() {
@@ -238,22 +252,48 @@
             }
             if (timerSecondsLeft <= 0) return;
             isTimerRunning = true;
+            document.getElementById('timerStartBtn').innerText = "▶ جاري";
             timerInterval = setInterval(() => {
-                if (timerSecondsLeft > 0) { timerSecondsLeft--; updateTimerDisplay(); }
-                else { stopTimer(); completedCount++; updateStats(); alert("انتهى الوقت!"); }
+                if (timerSecondsLeft > 0) { 
+                    timerSecondsLeft--; 
+                    updateTimerDisplay(); 
+                } else { 
+                    stopTimer(); 
+                    completedCount++; 
+                    updateStats(); 
+                    alert("انتهى الوقت!"); 
+                }
             }, 1000);
         }
 
-        function stopTimer() { clearInterval(timerInterval); isTimerRunning = false; }
-        function resetTimer() { stopTimer(); timerSecondsLeft = 0; updateTimerDisplay(); }
-        function setQuickTimer(s) { stopTimer(); timerSecondsLeft = s; timerTotalInitial = s; updateTimerDisplay(); }
+        function stopTimer() { 
+            clearInterval(timerInterval); 
+            isTimerRunning = false; 
+            document.getElementById('timerStartBtn').innerText = "▶ بدء";
+        }
+
+        function resetTimer() { 
+            stopTimer(); 
+            timerSecondsLeft = 0; 
+            timerTotalInitial = 0;
+            updateTimerDisplay(); 
+        }
+
+        function setQuickTimer(s) { 
+            stopTimer(); 
+            timerSecondsLeft = s; 
+            timerTotalInitial = s; 
+            updateTimerDisplay(); 
+        }
 
         function startStopwatch() {
             if (isStopwatchRunning) return;
             isStopwatchRunning = true;
             stopwatchInterval = setInterval(() => {
                 stopwatchSeconds++;
-                const h = Math.floor(stopwatchSeconds/3600), m = Math.floor((stopwatchSeconds%3600)/60), s = stopwatchSeconds%60;
+                const h = Math.floor(stopwatchSeconds/3600), 
+                      m = Math.floor((stopwatchSeconds%3600)/60), 
+                      s = stopwatchSeconds%60;
                 document.getElementById('stopwatchDisplay').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
             }, 1000);
         }
@@ -266,7 +306,7 @@
             document.getElementById('lapsContainer').innerHTML = stopwatchLaps.map((l, i) => `
                 <div class="flex justify-between p-2 border-b border-white/5 text-xs">
                     <span>دورة ${stopwatchLaps.length - i}</span>
-                    <span class="font-mono">${l}</span>
+                    <span class="font-mono text-emerald-400">${l}</span>
                 </div>`).join('');
         }
 
@@ -279,6 +319,7 @@
             localStorage.setItem('astra_clock_tasks', JSON.stringify(customTasks));
             renderTasksList();
             closeTaskModal();
+            document.getElementById('newTaskName').value = "";
         }
 
         function deleteCustomTask(id, e) {
@@ -294,17 +335,22 @@
             container.innerHTML = customTasks.map(t => `
                 <div class="task-item p-4 rounded-2xl flex justify-between items-center" onclick="setQuickTimer(${t.seconds})">
                     <div>
-                        <p class="font-bold">${t.name}</p>
-                        <p class="text-xs opacity-50">${Math.floor(t.seconds/60)} دقيقة</p>
+                        <p class="font-bold text-sm">${t.name}</p>
+                        <p class="text-[10px] opacity-50">${Math.floor(t.seconds/60)} دقيقة</p>
                     </div>
-                    <button onclick="deleteCustomTask(${t.id}, event)" class="text-red-400 hover:scale-110">✕</button>
+                    <button onclick="deleteCustomTask(${t.id}, event)" class="text-red-400 hover:scale-125 transition-transform p-2">✕</button>
                 </div>`).join('');
         }
 
-        function updateStats() { document.getElementById('taskStats').innerText = completedCount; localStorage.setItem('astra_completed_count', completedCount); }
+        function updateStats() { 
+            document.getElementById('taskStats').innerText = completedCount; 
+            localStorage.setItem('astra_completed_count', completedCount); 
+        }
+
         function openAddTaskModal() { document.getElementById('taskModal').style.display = 'flex'; }
         function closeTaskModal() { document.getElementById('taskModal').style.display = 'none'; }
 
+        // تهيئة عند التشغيل
         updateCurrentTime();
         renderTasksList();
         updateStats();
